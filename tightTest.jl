@@ -1,8 +1,12 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
 using Plots, LazySets, LinearAlgebra
+tΔ = 0.02
+
+function rectangleFromHBox(corners, offset)
+    Shape((getindex.(corners, 1)).+(offset*tΔ), getindex.(corners, 2))
+end
 
 T = 4
-tΔ = 0.1
 N = floor(Int, T/tΔ )
 μ = 0.001
 A = [-1. 0.; 0. -1.]#UniformScaling(-1.0)
@@ -33,12 +37,17 @@ end
 xs = range(0, T, length=N)
 maxes = []
 mines = []
+box = []
+
+plot(size=(500,400), dpi=300, thickness_scaling=1)
+
 for i in 1:(N)
     approxBox = box_approximation(boxes[i])
+    corners = vertices_list(boxes[i])
+    plot!(rectangleFromHBox(corners, i - 1), c=:blue,lab="")
     push!(maxes, norm(approxBox, Inf))
     push!(mines, low(approxBox, 2))
 end
-plot(xs, maxes, lab="max")
-plot!(xs, mines, lab="min")
+
 plot!(xs, 1.0 * exp.(-xs), vars=(0, 1), c=:magenta, lab="")
 plot!(xs, 2.0 * exp.(-xs), vars=(0, 1), c=:magenta, lab="")
