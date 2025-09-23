@@ -1,4 +1,4 @@
-
+using Plots, LazySets, LinearAlgebra
 
 function loadTest() # Maybe redo in the future with just 1 parameter
     A = [-1. 0.; 
@@ -13,4 +13,6 @@ function loadCosWave(tΔ)
     P = Zonotope([0., 0.0], [0.0 0.0; 0.0 1])
     return A, P
 end
+
+
 
