@@ -1,19 +1,22 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
 using Plots, LazySets, LinearAlgebra
-tΔ = 0.1
+include("helperfunctions.jl")
+const tΔ = 0.05
+const r = 1.2
 
-function rectangleFromHBox(corners, offset)
-    Shape([offset*tΔ,(offset+1)*tΔ,(offset+1)*tΔ,offset*tΔ]+(getindex.(corners, 1)), getindex.(corners, 2))
-end
+#A = [-1. 0.; 0. -1.]#reshape([-1.0], 1, 1)#UniformScaling(-1.0)#implement with double and add
 
-r = 0.2
+#A = [cos(r) sin(r); -sin(r) cos(r)]
+const A = [0. 1.; -2. 0.]
+const μ = 0.001
+
+P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])#[0.0 0.0; 0.0 0.5])
+
+
+#=
 
 T = 4
 N = floor(Int, T/tΔ)
-μ = 0.001
-#A = [cos(r) sin(r); -sin(r) cos(r)]
-A = [-1. 0.; 0. -1.]#reshape([-1.0], 1, 1)#UniformScaling(-1.0)#implement with double and add
-P₁ = Zonotope([0., 1.5], [[0.0; 0.5]])#[0.0 0.0; 0.0 0.5])
 #P₁ = Zonotope([0., 2], [0.0 0.0; 0.0 1])
 ANorm = norm(A, Inf)
 α = (exp(ANorm*tΔ)-1-tΔ*ANorm)/norm(P₁, Inf)
@@ -31,7 +34,7 @@ end=#
 
 ϕp = (I+ϕ)/2
 ϕm = (I-ϕ)/2
-gens = hcat(ϕp*P₁.generators,ϕm*P₁.center, ϕm*P₁.generators )
+gens = hcat(ϕp*P₁.generators,ϕm*P₁.center, ϕm*P₁.generators)
 
 
 R₁ = minkowski_sum(Zonotope(ϕp*P₁.center, gens), Zonotope(zeros(2), (α+β)*I(2)))
@@ -47,16 +50,34 @@ for i in 2:N
     global R = R∪box_approximation(boxes[i])
 end
 xs = range(0, T, length=N)
-box = []
+box = []=#
+
+const T = 4
 
 p = plot(dpi=300, thickness_scaling=1)
 
-for i in 1:(N)
-    approxBox = box_approximation(boxes[i])
-    corners = vertices_list(boxes[i])
-    plot!(p, rectangleFromHBox(corners, i), vars=(0,1), c=:blue,lab="")
-    #plot!(p, Shape(getindex.(corners, 1), getindex.(corners, 2)), vars=(0, 1), c=:blue,lab="")
+
+
+@time boxes = reachsets(A, tΔ, [0, T], P₁, μ)
+
+proj = [0. 0.; 0. 1.]
+corners = Vector(undef, size(boxes, 1))
+
+@time begin
+    for i in 1:(size(boxes, 1))
+        corners[i] = vertices_list(box_approximation(boxes[i]))
+        #plot!(p, Shape(getindex.(corners, 1), getindex.(corners, 2)), vars=(0, 1), c=:blue,lab="")
+    end
 end
+
+shapes = Vector{Shape}(undef, size(boxes, 1))
+@time rectangleFromHBox!(shapes, corners, tΔ, 2)
+
+for i in eachindex(shapes)
+    plot!(p, shapes[i], vars=(1,0), c=:blue, lab="")
+end
+
+#plot!(p, rectangleFromHBox(corners, tΔ, 2), vars=(1,0), c=:blue,lab="")
 
 plot(p)
 
