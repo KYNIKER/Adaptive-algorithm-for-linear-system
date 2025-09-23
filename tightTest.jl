@@ -1,19 +1,19 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
 using Plots, LazySets, LinearAlgebra
-include("helperfunctions.jl")
+tΔ = 0.1
 
-tΔ = 0.4
+function rectangleFromHBox(corners, offset)
+    Shape([offset*tΔ,(offset+1)*tΔ,(offset+1)*tΔ,offset*tΔ]+(getindex.(corners, 1)), getindex.(corners, 2))
+end
 
-
-
-r = 1.5
+r = 0.2
 
 T = 4
 N = floor(Int, T/tΔ)
 μ = 0.001
-A = [cos(r) sin(r); -sin(r) cos(r)]
-#A = [-1. 0.; 0. -1.]#reshape([-1.0], 1, 1)#UniformScaling(-1.0)#implement with double and add
-P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])#[0.0 0.0; 0.0 0.5])
+#A = [cos(r) sin(r); -sin(r) cos(r)]
+A = [-1. 0.; 0. -1.]#reshape([-1.0], 1, 1)#UniformScaling(-1.0)#implement with double and add
+P₁ = Zonotope([0., 1.5], [[0.0; 0.5]])#[0.0 0.0; 0.0 0.5])
 #P₁ = Zonotope([0., 2], [0.0 0.0; 0.0 1])
 ANorm = norm(A, Inf)
 α = (exp(ANorm*tΔ)-1-tΔ*ANorm)/norm(P₁, Inf)
@@ -54,7 +54,7 @@ p = plot(dpi=300, thickness_scaling=1)
 for i in 1:(N)
     approxBox = box_approximation(boxes[i])
     corners = vertices_list(boxes[i])
-    plot!(p, rectangleFromHBox(corners), vars=(0,1), c=:blue,lab="")
+    plot!(p, rectangleFromHBox(corners, i), vars=(0,1), c=:blue,lab="")
     #plot!(p, Shape(getindex.(corners, 1), getindex.(corners, 2)), vars=(0, 1), c=:blue,lab="")
 end
 
