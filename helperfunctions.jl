@@ -5,13 +5,14 @@ function rectangleFromHBox(corners)
 end
 
 function rectangleFromHBox!(res::AbstractVector{Shape}, cornerss, timestepsize, dim)
-
+    deltt = timestepsize
     for i in 1:size(cornerss, 1)#ændrer til getindex -> max min 
+        deltt = deltt+(2*timestepsize/size(cornerss,1))
         tope = getindex(cornerss, i)
         dimCoords = getindex.(tope, dim)
         maxcor = maximum(dimCoords)
         mincor = minimum(dimCoords)
-        res[i] = Shape([timestepsize*(i-1), timestepsize*i, timestepsize*i, timestepsize*(i-1)], [mincor, mincor, maxcor, maxcor])
+        res[i] = Shape([deltt*(i-1), deltt*i, deltt*i, deltt*(i-1)], [mincor, mincor, maxcor, maxcor])
     end
     return res
 end
@@ -35,10 +36,21 @@ function reachsets(A, timestepsize, interval, X₀, μ)
     R = [R₁]
 
     ballβ = Zonotope(zeros(2), β*I(2))
+    i = 2
+    deltt=timestepsize
+    while i < N
+        deltt = deltt+(2*timestepsize/N)
+        #α = (exp(ANorm*timestepsize)-1-timestepsize*ANorm)/norm(X₀, Inf)
+        β = (exp(ANorm*deltt)-1)*μ/ANorm
 
-    for i in 2:N
+        ϕ = exp(A*deltt)
+
+        ballβ = Zonotope(zeros(2), β*I(2))
         push!(R, minkowski_sum(linear_map(ϕ, R[i-1]), ballβ))
         #res[i] = R[i]
+        N = floor(Int, T/deltt) # Re-estimate amount of timesteps
+        i += 1
+    
     end
     return R
 end

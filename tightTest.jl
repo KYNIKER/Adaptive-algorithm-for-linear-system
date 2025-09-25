@@ -32,7 +32,7 @@ shapes2 = Vector{Shape}(undef, size(boxes2, 1))
 @time rectangleFromHBox!(shapes2, corners2, 2*tΔ, 2)
 
 for i in eachindex(shapes2)
-    plot!(p, shapes2[i], vars=(1,0), c=:red, alpha=:0.5, lab="")
+    #plot!(p, shapes2[i], vars=(1,0), c=:red, alpha=:0.5, lab="")
 end
 
 ##
