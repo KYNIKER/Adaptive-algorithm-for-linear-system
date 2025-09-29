@@ -1,7 +1,11 @@
 using LazySets, LinearAlgebra
 
-function rectangleFromHBox(corners)
-    Shape(getindex.(corners, 1), getindex.(corners, 2))
+function rectangleFromHBox(res::AbstractVector{Shape}, corners)
+    for i in 1:size(corners,1)
+        tope = getindex(corners, i)
+        res[i] = Shape(getindex.(tope, 1), getindex.(tope, 2))
+    end
+    return res
 end
 
 function rectangleFromHBox!(res::AbstractVector{Shape}, cornerss, timestepsize, dim)
