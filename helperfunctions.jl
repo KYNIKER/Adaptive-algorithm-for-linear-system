@@ -4,7 +4,7 @@ function rectangleFromHBox(corners)
     Shape(getindex.(corners, 1), getindex.(corners, 2))
 end
 
-function rectangleFromHBox!(res::AbstractVector{Shape}, cornerss, timestepsize, dim)
+function rectangleFromHBox!(res::AbstractVector{Shape}, cornerss, timestepsize, dim, timescale)
     deltt = timestepsize
     currentTime = 0
     for i in 1:size(cornerss, 1)#ændrer til getindex -> max min 
@@ -15,12 +15,12 @@ function rectangleFromHBox!(res::AbstractVector{Shape}, cornerss, timestepsize, 
         res[i] = Shape([currentTime, currentTime + deltt, currentTime + deltt, currentTime], [mincor, mincor, maxcor, maxcor])
         #res[i] = Shape([deltt*(i-1), deltt*i, deltt*i, deltt*(i-1)], [mincor, mincor, maxcor, maxcor])
         currentTime = currentTime + deltt
-        deltt = deltt+0.01*timestepsize
+        deltt = deltt+timescale*timestepsize
     end
     return res
 end
 
-function reachsets(A, timestepsize, interval, X₀, μ)
+function reachsets(A, timestepsize, interval, X₀, μ, timescale)
     T = maximum(interval)
     N = floor(Int, T/timestepsize)
     
@@ -44,7 +44,7 @@ function reachsets(A, timestepsize, interval, X₀, μ)
     time = timestepsize # We have already done one timestep
     #while i < N
     while time < T
-        deltt = deltt+0.01*timestepsize
+        deltt = deltt+timescale*timestepsize
         #α = (exp(ANorm*timestepsize)-1-timestepsize*ANorm)/norm(X₀, Inf)
         β = (exp(ANorm*deltt)-1)*μ/ANorm
 
