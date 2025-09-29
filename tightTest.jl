@@ -12,7 +12,8 @@ const μ = 0.001
 
 P₁ = Zonotope([0., 1.5], [[0.0; 0.05]]) #[0.0 0.0; 0.0 0.5])
 
-const T = 8
+#const T = 8
+T = 8
 
 p = plot(dpi=300, thickness_scaling=1)
 
