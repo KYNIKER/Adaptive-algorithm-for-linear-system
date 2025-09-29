@@ -5,7 +5,7 @@ const tΔ = 0.01
 const r = 1.2
 
 #A = [-1. 0.; 0. -1.]#reshape([-1.0], 1, 1) #UniformScaling(-1.0) #implement with double and add
-
+constraint = HalfSpace([0., -1.], -1.3)
 #A = [cos(r) sin(r); -sin(r) cos(r)]
 const A = [0. 1.; -9.82 0.]
 const μ = 0.001
@@ -56,5 +56,5 @@ shapes = Vector{Shape}(undef, size(boxes, 1))
 for i in eachindex(shapes)
     plot!(p, shapes[i], vars=(1,0), c=:blue, alpha=:0.5, lab="")
 end
-
+plot!(constraint, lab="constraint")
 plot(p)
