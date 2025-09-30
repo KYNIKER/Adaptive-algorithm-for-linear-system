@@ -8,7 +8,7 @@ const r = 1.2
 
 #A = [cos(r) sin(r); -sin(r) cos(r)]
 const A = [0. 1.; -2.5 0.]
-const μ = 0.001
+const μ = 0.000
 
 P₁ = Zonotope([0., 1.5], [[0.0; 0.05]]) #[0.0 0.0; 0.0 0.5])
 
@@ -20,8 +20,8 @@ p = plot(dpi=300, thickness_scaling=1)
 
 timesteps = []
 
-values = [0.2, 0.1, 0.2, 0.05, 0.15, 0.20, 0.02]
-amounts = [1, 10, 5, 20, 5, 5,40]
+values = [0.2, 0.1, 0.2, 0.05, 0.3, 0.20, 0.02, 0.05]
+amounts = [1, 10, 5, 20, 2, 5, 40, 8]
 
 for (value, amount) in zip(values, amounts)
     global timesteps = vcat(timesteps, fill(value, amount))

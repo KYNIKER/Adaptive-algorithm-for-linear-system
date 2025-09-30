@@ -23,7 +23,7 @@ end
 function rectangleFromHBoxWithTimestepArray(res::AbstractVector{Shape}, cornerss, timesteps, startTime, dim)
 
     currentTime = startTime
-    for i in 1:size(cornerss, 1)#ændrer til getindex -> max min 
+    for i in 1:size(cornerss, 1)#
         timestep = timesteps[i]
 
         tope = getindex(cornerss, i)
@@ -67,7 +67,7 @@ function reachsets(A, timestepsize, interval, X₀, μ, timescale)
 
         ϕ = exp(A*deltt)
 
-        ballβ = Zonotope(zeros(2), β*I(2))
+        ballβ = Zonotope(zeros(dim(X₀)), β*I(2))
         push!(R, minkowski_sum(linear_map(ϕ, R[i-1]), ballβ))
         #res[i] = R[i]
 
@@ -80,13 +80,7 @@ function reachsets(A, timestepsize, interval, X₀, μ, timescale)
     return R
 end
 
-function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
-    startTime = minimum(interval)
-    
-    ANorm = norm(A, Inf)
-
-    timestep = timesteps[1] # Use first element
-
+function initialStep(A, ANorm, timestep, X₀, μ)
     α = (exp(ANorm*timestep)-1-timestep*ANorm)/norm(X₀, Inf)
     β = (exp(ANorm*timestep)-1)*μ/ANorm
 
@@ -97,24 +91,48 @@ function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
     gens = hcat(ϕp*X₀.generators,ϕm*X₀.center, ϕm*X₀.generators)
 
 
-    R₁ = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(2), (α+β)*I(2)))
+    R = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(2), (α+β)*I(2)))
+
+    ballβ = Zonotope(zeros(dim(X₀)), β*I(2))
+
+    return (R, ballβ, ϕ)
+end
+
+function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
+    ANorm = norm(A, Inf)
+
+    timestep = timesteps[1] # Use first element
+
+    R₁, ballβ, ϕ = initialStep(A, ANorm, timestep, X₀, μ)
 
     R = [R₁]
 
     totalLength = length(timesteps)
+    currentTime = timestep
 
     for i in 2:totalLength
         timestep = timesteps[i]
-        α = (exp(ANorm*timestep)-1-timestep*ANorm)/norm(X₀, Inf)
-        β = (exp(ANorm*timestep)-1)*μ/ANorm
+        if timestep == timesteps[i-1] # Check if timestep is the same
+            prevR = R[i-1] # Reuse previous result
+            
+            # If no input we can avoid the minkowski_sum
+            # and thus not add more generators to the zonotope
+            if (μ == 0)
+                push!(R, linear_map(ϕ, prevR))
+            else 
+                push!(R, minkowski_sum(linear_map(ϕ, prevR), ballβ))
+            end
 
-        ϕ = exp(A*timestep)
+        else # Recalculate values for new timestep
+            newR, ballβ, ϕ = initialStep(A, ANorm, timestep, X₀, μ)
+            
+            # We move R to the current time
+            ϕCurrentTime = exp(A*currentTime)
+            newR = Zonotope(ϕCurrentTime * newR.center, ϕCurrentTime * newR.generators)
 
-        
-        ballβ = Zonotope(zeros(2), β*I(2))
-        push!(R, minkowski_sum(linear_map(ϕ, R[i-1]), ballβ))
-
-    #res = [R₁]
+            push!(R, newR)
+        end
+        currentTime = currentTime + timestep
 
     end
     return R
