@@ -137,3 +137,11 @@ function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
     end
     return R
 end
+
+function approximateArea(zonotope::Zonotope)
+    zonotope |> box_approximation |> area
+end
+
+function approximateArea(zonotope::AbstractVector{Zonotope{Float64, Vector{Float64}, Matrix{Float64}}})
+    area(reduce(∪, map(box_approximation, zonotope)))
+end
