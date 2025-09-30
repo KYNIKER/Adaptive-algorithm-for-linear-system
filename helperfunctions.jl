@@ -20,6 +20,13 @@ function rectangleFromHBox!(res::AbstractVector{Shape}, cornerss, timestepsize, 
     return res
 end
 
+function rectangleFromHbox!(res::AbstractVector{Shape}, corners, dim1, dim2)
+    for i in 1:size(corners, 1)
+        tope = getindex(corners, i)
+        res[i] = Shape(getindex.(tope, dim1), getindex.(tope, dim2))
+    end
+end
+
 function rectangleFromHBoxWithTimestepArray(res::AbstractVector{Shape}, cornerss, timesteps, startTime, dim)
 
     currentTime = startTime
