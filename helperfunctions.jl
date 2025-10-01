@@ -217,3 +217,20 @@ end
 function approximateArea(zonotope::AbstractVector{Zonotope{Float64, Vector{Float64}, Matrix{Float64}}})
     area(reduce(∪, map(box_approximation, zonotope)))
 end
+
+#intersects function is based upon "Set operations and order reductions for constrained zonotopes" - Vignesh Raghuraman, Justin P. Koeln
+#Note that this only returns true if they intersect and does not depend on whether the intersection between them is empty.
+function intersects(zonotope::Zonotope, halfspace::HalfSpace)
+    h, f = tosimplehrep(halfspace)
+    l = abs(only(f) - dot(h', zonotope.center))
+    r = sum(abs.(zonotope.generators .* h'))
+    return l <= r
+end
+
+function intersects(halfspace::HalfSpace, zonotope::Zonotope)
+    intersects(zonotope, halfspace)
+end
+
+function intersects(z1::Zonotope, z2::Zonotope) #Should be possible to compute this from above paper by viewing the zonotopes as being constrained but with no constrains and whether their intersecting zonotope has empty 
+    isdisjoint(z1, z2)
+end
