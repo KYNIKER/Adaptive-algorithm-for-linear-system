@@ -8,7 +8,7 @@ function rectangleFromHBox(res::AbstractVector{Shape}, corners)
     return res
 end
 
-function rectangleFromHBox!(res::AbstractVector{Shape}, cornerss, timestepsize, dim, timescale)
+function rectangleFromHBox!(res::AbstractVector{Shape}, cornerss, timestepsize, dim, timescale::Float64)
     deltt = timestepsize
     currentTime = 0
     for i in 1:size(cornerss, 1)#ændrer til getindex -> max min 

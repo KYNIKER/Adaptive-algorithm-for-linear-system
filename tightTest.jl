@@ -2,7 +2,6 @@
 using Plots, LazySets, LinearAlgebra
 include("helperfunctions.jl")
 const tΔ = 0.01
-const tΔ = 0.01
 const r = 1.2
 
 #A = [-1. 0.; 0. -1.]#reshape([-1.0], 1, 1) #UniformScaling(-1.0) #implement with double and add
@@ -55,7 +54,6 @@ shapes = Vector{Shape}(undef, size(boxes, 1))
 @time rectangleFromHBox!(shapes, corners, 2*tΔ, 2, ts2)
 
 for i in eachindex(shapes)
-    plot!(p, shapes[i], vars=(1,0), c=:blue, alpha=:0.5, lab="")
     plot!(p, shapes[i], vars=(1,0), c=:blue, alpha=:0.5, lab="")
 end
 plot!(constraint, lab="constraint")
