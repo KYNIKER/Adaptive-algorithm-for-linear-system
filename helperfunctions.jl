@@ -98,9 +98,9 @@ function initialStep(A, ANorm, timestep, X₀, μ)
     gens = hcat(ϕp*X₀.generators,ϕm*X₀.center, ϕm*X₀.generators)
 
 
-    R = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(2), (α+β)*I(2)))
+    R = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), (α+β)*I(dim(X₀))))
 
-    ballβ = Zonotope(zeros(dim(X₀)), β*I(2))
+    ballβ = Zonotope(zeros(dim(X₀)), β*I(dim(X₀)))
 
     return (R, ballβ, ϕ)
 end
