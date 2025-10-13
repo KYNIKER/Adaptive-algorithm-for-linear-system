@@ -2,7 +2,7 @@ using LazySets, LinearAlgebra
 
 function PCA_reduce(Z, k) # Reduce to k generators
 
-    c = center(Z) # get center
+    c = Z.center # get center
     G = genmat(Z) # Get generators
 
     U, S, V = svd(G) # Apply singular value decomposition (https://www.geeksforgeeks.org/machine-learning/singular-value-decomposition-svd/)

@@ -1,5 +1,7 @@
 using LazySets, LinearAlgebra
 
+using Random # For strategy 4
+
 function rectangleFromHBox(res::AbstractVector{Shape}, corners)
     for i in 1:size(corners,1)
         tope = getindex(corners, i)
@@ -24,9 +26,12 @@ function rectangleFromHBox!(res::AbstractVector{Shape}, cornerss, timestepsize, 
     return res
 end
 
-function rectangleFromHbox!(res::AbstractVector{Shape}, corners, dim1, dim2)
+function rectangleFromHBox2Dims(res::AbstractVector{Shape}, corners, dim1, dim2)
     for i in 1:size(corners, 1)
         tope = getindex(corners, i)
+        # Switch 3rd and 4th index
+        tope[3], tope[4] = tope[4], tope[3]
+
         res[i] = Shape(getindex.(tope, dim1), getindex.(tope, dim2))
     end
 end
@@ -122,6 +127,21 @@ function initialStep(A, ANorm, timestep, X₀, μ)
     return (R, ballβ, ϕ)
 end
 
+function initialStepNoInput(A, ANorm, timestep, X₀)
+    α = (exp(ANorm*timestep)-1-timestep*ANorm)/norm(X₀, Inf)
+    ϕ = exp(A*timestep)
+
+    ϕp = (I+ϕ)/2
+    ϕm = (I-ϕ)/2
+    gens = hcat(ϕp*X₀.generators,ϕm*X₀.center, ϕm*X₀.generators)
+
+
+    R = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), α*I(dim(X₀))))
+
+    return (R, ϕ)
+end
+
+
 function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
     ANorm = norm(A, Inf)
 
@@ -161,6 +181,255 @@ function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
     end
     return R
 end
+
+# Move a zonotope forward in time, assumes no input
+function forwardTime(A, R, currentTime)
+    ϕCurrentTime = exp(A*currentTime)
+    return Zonotope(ϕCurrentTime * R.center, ϕCurrentTime * R.generators)
+end
+
+# CEGAR like approach
+# Note that we assume no input
+
+# We have different strategies for how to choose the timestep
+# 1: We half the timestpe on fail, and reset each time
+
+# 2: We half the timestep on fail. Upon consecutive fails we take 2^(x-1) - 1 steps before attempting reset, 
+# where x is the number of consecutive fails. We reset to initial timestep
+
+# 3: Never reset. If no errors in past x steps, double timestep
+
+# 4: Randomly choose to retain or increase
+# Adjust chance of increase based on previous success of increase
+# Keep different profiles dependt on amount of recent fails
+# Specifically 0-1, 2-3, 4-5, 6+
+
+function reachSetsCegar(A, initialTimestep, interval, X0, constraint, strategy = 1)
+    ANorm = norm(A, Inf)
+    R = []
+    changedTimeStep = true # Keepss track of whether timestep has changed
+
+    # Dictionary to keep track of initial R and phi for each timestep
+    previouslyCalculatedDict = Dict()
+
+    time = minimum(interval)
+    endtime = maximum(interval)
+
+    currentTimeStep = initialTimestep
+    timestepRecorder = []
+    attemptsRecorder = []
+
+    ϕ = nothing # This will always be updated later
+    modelFails = false # Do this if we reach a constraint violation always
+    i = 1 # Enumerator
+
+
+    # Strategy unique variables, remove for more effecient code
+    # Strategy 2
+    consecutiveFails = 0 # Keeps track of consecutive fails at initialTimeStep
+    skipResetCounter = 0 # Counter for skipping resets. 0 means no skip, >0 means skip
+    skipCompute = false  # Whether to skip computation, useful for when we have just been skipping
+
+    # Strategy 3
+    requiredSuccessCountForAttempt = 4 # Number of required consecutive successes to try double timestep
+
+    # Strategy 4
+    currentAttempt = -1 # Keep track of current attempt, -1 means no attempt
+    initialChance = 0.5 # Initial chance of increasing in each profile
+    backTrackDebth = 10 # Amount of previous steps to look at when choosing profile
+    profilesAmount = 5 # Amount of profiles
+    profileInterval = 3 # Amount of values between each profile
+
+    profiles = []
+    for i in 1:profilesAmount
+        push!(profiles, initialChance)
+    end
+
+    # Function to change timestep, also updates changedTimeStep
+    function changeTimeStep(newTimestep)
+        currentTimeStep = newTimestep
+        changedTimeStep = true
+    end
+
+
+    # Main loop
+    while time < endtime
+        if i% 100 == 0
+            println("Time at step $i: $time")
+        end
+
+        if modelFails
+            break
+        end
+
+        attempts = 1 # Keep track of number of attempts
+        approveFlag = false
+        newR = nothing # This will always be updated later
+
+        # If exceeds endtime, change timestep
+        if time + currentTimeStep > endtime
+            currentTimeStep = endtime - time
+            changedTimeStep = true
+        end
+
+        while !approveFlag
+            if currentTimeStep == 0
+                # We have a model fail
+                println("Error model fails at time $time, constraint is not satisfied")
+                modelFails = true
+                break
+            end
+
+            if changedTimeStep
+                # Check if we have already calculated the initial step
+                if haskey(previouslyCalculatedDict, currentTimeStep)
+                    newR, ϕ = previouslyCalculatedDict[currentTimeStep]
+                else
+                    # We calculate and store it
+                    newR, ϕ = initialStepNoInput(A, ANorm, currentTimeStep, X0)
+                    previouslyCalculatedDict[currentTimeStep] = (newR, ϕ)
+                end
+                # Forward in time
+                newR = forwardTime(A, newR, time)
+                changedTimeStep = false
+            else
+                # Do the next step
+                newR = linear_map(ϕ, R[i-1])
+            end
+
+            # Check if we intersect with constraint
+            if !intersects(constraint, newR)
+                approveFlag = true
+            else # Reduce timestep
+                changeTimeStep(currentTimeStep/2)
+                attempts = attempts + 1
+            end
+
+        end
+        # Found a valid timestep
+        push!(R, newR)
+        push!(timestepRecorder, currentTimeStep)
+        push!(attemptsRecorder, attempts)
+        i = i + 1
+        time = time + currentTimeStep
+
+        # Reset / apply strategy
+    
+        if strategy == 1
+            # Check if should reset
+            if currentTimeStep != initialTimestep
+                changeTimeStep(initialTimestep)
+            end
+        elseif strategy == 2
+            # Apply logic to consecutive bad resets
+            if skipResetCounter == 0
+                if skipCompute # We have just been skipping, and wanna do 1 computation with reset
+                    skipCompute = false
+                else
+                    # # If initial timestep is good, set fails to 0
+                    # if currentTimeStep == initialTimestep
+                    #     consecutiveFails = 0
+
+                    # If reset found a better timestep
+                    prevTimestep = initialTimestep
+                    if i > 2 # Attempt to get previous timestep
+                        prevTimestep = timestepRecorder[i-2]
+                    end
+
+                    if prevTimestep < currentTimeStep
+                        consecutiveFails = 0
+                    else # If we encounter a fail
+                        consecutiveFails = consecutiveFails + 1
+                        if consecutiveFails > 1
+                            skipResetCounter = 2^(consecutiveFails-1) - 1
+                            #println("Adding $skipResetCounter to skip counter at time $time")
+                        end
+                    end
+                end
+            end
+
+
+            # Check if should skip reset, we check twice as it could be changed above
+            if 0 < skipResetCounter
+                skipResetCounter = skipResetCounter - 1
+                skipCompute = true # Make sure we do 1 reset computation, before we can add more skips
+                continue
+            end
+            # Apply reset
+            if currentTimeStep != initialTimestep
+                changeTimeStep(initialTimestep)
+            end
+
+            
+        elseif strategy == 3
+            flag = true
+            # We look for any errors in past x steps
+            for j in 1:min(i-1, requiredSuccessCountForAttempt)
+                if attemptsRecorder[i-j] != 1
+                    flag = false
+                    break
+                end
+            end
+            if flag #If we have x success in a row, double timestep
+                changeTimeStep(currentTimeStep*2)
+            end
+        
+        elseif strategy == 4
+            # Check if we need to penalize previous(!)
+            if currentAttempt != -1
+
+                attemptAmount = attemptsRecorder[i-1]
+                if attemptAmount == 1 # It was a success
+                    profiles[currentAttempt] = min(0.9, profiles[currentAttempt] + 0.2)
+                else # It was a fail
+                    profiles[currentAttempt] = max(0.1, profiles[currentAttempt] - 0.1)
+                end
+                currentAttempt = -1
+            end
+
+            # Figure out which strategy to useful
+            backTrack = min(i-1, backTrackDebth)
+            accumulatedAttempts = -backTrackDebth # We reduce by the atleast 1 attempt needed
+            for j in 1:backTrack
+                accumulatedAttempts = accumulatedAttempts + attemptsRecorder[(i-j)] # -1 due to i being 1 ahead
+            end 
+            profileToUse = 1
+            while accumulatedAttempts > profileInterval && profileToUse < profilesAmount
+                accumulatedAttempts = accumulatedAttempts - profileInterval
+                profileToUse = profileToUse + 1
+            end
+
+            # Use randomness to determine to increase or decrease
+            # According to https://discourse.julialang.org/t/random-number-in-0-1/16009/4
+            randomValue = rand()
+            if randomValue === 0.0
+                randomValue = 1
+            end
+
+            # We try double timestep maybe
+            if randomValue < profiles[profileToUse]
+                changeTimeStep(currentTimeStep*2)
+                # We note down which profile we used, and that we made an attempt
+                currentAttempt = profileToUse
+            end
+
+
+
+
+        else 
+            println("Unknown strategy, ending program")
+            modelFails = true
+        end
+    end
+    # End of main loop
+
+    if strategy == 4
+        println("These profiles were used: ", profiles)
+    end
+
+    return (R, timestepRecorder, attemptsRecorder)
+end
+
 
 function reachsetslog(A, timestepsize, interval, X₀, μ)
     T = maximum(interval)

@@ -20,8 +20,8 @@ p = plot(dpi=300, thickness_scaling=1)
 
 timesteps = []
 
-values = [0.2, 0.1, 0.2, 0.05, 0.3, 0.20, 0.02, 0.05]
-amounts = [1, 10, 5, 20, 2, 5, 40, 8]
+values = [0.2, 0.1, 0.2, 0.05, 0.15, 0.20, 0.02, 0.05]
+amounts = [1, 10, 5, 20, 4, 5, 40, 8]
 
 for (value, amount) in zip(values, amounts)
     global timesteps = vcat(timesteps, fill(value, amount))
