@@ -149,7 +149,17 @@ function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
 
     R₁, ballβ, ϕ = initialStep(A, ANorm, timestep, X₀, μ)
 
+    
     R = [R₁]
+
+    # We only further utilize these if we have an input
+    Ω = []
+    S = ballβ
+    V = ballβ
+    if (μ != 0)
+        push!(Ω, minkowski_sum(R₁, ballβ))
+        V = linear_map(ϕ, V)
+    end
 
     totalLength = length(timesteps)
     currentTime = timestep
@@ -158,13 +168,16 @@ function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
         timestep = timesteps[i]
         if timestep == timesteps[i-1] # Check if timestep is the same
             prevR = R[i-1] # Reuse previous result
-            
-            # If no input we can avoid the minkowski_sum
-            # and thus not add more generators to the zonotope
-            if (μ == 0)
-                push!(R, linear_map(ϕ, prevR))
-            else 
-                push!(R, minkowski_sum(linear_map(ϕ, prevR), ballβ))
+
+            newR = linear_map(ϕ, prevR)
+            push!(R, newR)
+
+            # If we have an input
+            if (μ != 0)
+                S = minkowski_sum(S, V)
+                V = linear_map(ϕ, V)
+
+                push!(Ω, minkowski_sum(newR, S))
             end
 
         else # Recalculate values for new timestep
@@ -175,11 +188,28 @@ function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
             newR = Zonotope(ϕCurrentTime * newR.center, ϕCurrentTime * newR.generators)
 
             push!(R, newR)
+
+            if (μ != 0)
+                # We have to retroactivily calculate the new S
+                steps = floor(Int, currentTime / timestep)
+                S = ballβ
+                V = ballβ
+                for j in 1:steps
+                    S = minkowski_sum(S, V)
+                    V = linear_map(ϕ, V)
+                end
+                
+                push!(Ω, minkowski_sum(newR, S))
+            end
         end
         currentTime = currentTime + timestep
-
     end
-    return R
+    # If no input just return R
+    if (μ == 0)
+        return R
+    end
+    # Else return Ω
+    return Ω
 end
 
 # Move a zonotope forward in time, assumes no input
