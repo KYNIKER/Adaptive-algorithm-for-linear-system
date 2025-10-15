@@ -213,9 +213,31 @@ function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
 end
 
 # Move a zonotope forward in time, assumes no input
-function forwardTime(A, R, currentTime)
+function forwardTimeNoInput(A, R, currentTime)
     ϕCurrentTime = exp(A*currentTime)
     return Zonotope(ϕCurrentTime * R.center, ϕCurrentTime * R.generators)
+end
+
+function forwardTime(A, R, currentTime, timestep, ballβ, ϕ)
+    newR = forwardTimeNoInput(A, R, currentTime)
+
+    # Note that steps should always work
+    if currentTime % timestep != 0
+        #throw(DomainError(currentTime % timestep, "Error in forwardTime, $currentTime % $timestep != 0"))
+        println("Error in forwardTime, $currentTime % $timestep != 0")
+    end
+
+    steps = floor(Int, currentTime / timestep)
+    S = ballβ
+    V = ballβ
+    for j in 1:steps
+        S = minkowski_sum(S, V)
+        V = linear_map(ϕ, V)
+    end
+    newΩ = minkowski_sum(newR, S)
+
+    #println("Set S, V: $S, $V with steps $steps")
+    return (newR, S, V, newΩ)
 end
 
 # CEGAR like approach
@@ -234,9 +256,13 @@ end
 # Keep different profiles dependt on amount of recent fails
 # Specifically 0-1, 2-3, 4-5, 6+
 
-function reachSetsCegar(A, initialTimestep, interval, X0, constraint, strategy = 1)
+
+const DIGITS = 4
+
+function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strategy = 1)
     ANorm = norm(A, Inf)
     R = []
+    Ω = []
     changedTimeStep = true # Keepss track of whether timestep has changed
 
     # Dictionary to keep track of initial R and phi for each timestep
@@ -249,6 +275,8 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, strategy =
     timestepRecorder = []
     attemptsRecorder = []
 
+    S = nothing # This will always be updated later
+    V = nothing # This will always be updated later
     ϕ = nothing # This will always be updated later
     modelFails = false # Do this if we reach a constraint violation always
     i = 1 # Enumerator
@@ -295,12 +323,15 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, strategy =
         attempts = 1 # Keep track of number of attempts
         approveFlag = false
         newR = nothing # This will always be updated later
+        newS = nothing # This will always be updated later
+        newV = nothing # This will always be updated later
+        newΩ = nothing # This will always be updated later
 
         # If exceeds endtime, change timestep
-        if time + currentTimeStep > endtime
-            currentTimeStep = endtime - time
-            changedTimeStep = true
-        end
+        # if time + currentTimeStep > endtime
+        #     currentTimeStep = endtime - time
+        #     changedTimeStep = true
+        # end
 
         while !approveFlag
             if currentTimeStep == 0
@@ -308,28 +339,65 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, strategy =
                 println("Error model fails at time $time, constraint is not satisfied")
                 modelFails = true
                 break
+            elseif changedTimeStep
+                # We make sure to round the timestep
+                currentTimeStep = round(currentTimeStep, digits=DIGITS)
+
+                # We check if the new timestep respects the interval
+                if mod(time, currentTimeStep) != 0
+                    println("Cannot use $currentTimeStep as timestep at time $time")
+                    currentTimeStep = currentTimeStep/2
+                    continue
+                end
             end
 
             if changedTimeStep
                 # Check if we have already calculated the initial step
                 if haskey(previouslyCalculatedDict, currentTimeStep)
-                    newR, ϕ = previouslyCalculatedDict[currentTimeStep]
+                    if μ == 0
+                        newR, ϕ = previouslyCalculatedDict[currentTimeStep]
+                    else
+                        newR, ballβ, ϕ = previouslyCalculatedDict[currentTimeStep]
+                    end
                 else
                     # We calculate and store it
-                    newR, ϕ = initialStepNoInput(A, ANorm, currentTimeStep, X0)
-                    previouslyCalculatedDict[currentTimeStep] = (newR, ϕ)
+                    if μ == 0
+                        newR, ϕ = initialStepNoInput(A, ANorm, currentTimeStep, X0)
+                        previouslyCalculatedDict[currentTimeStep] = (newR, ϕ)
+                    else 
+                        newR, ballβ, ϕ = initialStep(A, ANorm, currentTimeStep, X0, μ)
+                        previouslyCalculatedDict[currentTimeStep] = (newR, ballβ, ϕ)
+                    end
                 end
                 # Forward in time
-                newR = forwardTime(A, newR, time)
+                if μ == 0
+                    newR = forwardTimeNoInput(A, newR, time)
+                else
+                    newR, newS, newV, newΩ = forwardTime(A, newR, time, currentTimeStep, ballβ, ϕ)
+                end
                 changedTimeStep = false
             else
                 # Do the next step
                 newR = linear_map(ϕ, R[i-1])
+                if (μ != 0)
+                    newS = minkowski_sum(S, V)
+                    newV = linear_map(ϕ, V)
+                    newΩ = minkowski_sum(newR, newS)
+                end
+            end
+            
+            # Hoping this gets compiled effeciently as μ is a constant
+            checkArea = nothing
+            if μ == 0
+                checkArea = newR
+            else
+                checkArea = newΩ
             end
 
             # Check if we intersect with constraint
-            if !intersects(constraint, newR)
+            if !intersects(constraint, checkArea)
                 approveFlag = true
+            
             else # Reduce timestep
                 changeTimeStep(currentTimeStep/2)
                 attempts = attempts + 1
@@ -337,11 +405,20 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, strategy =
 
         end
         # Found a valid timestep
+
+        println("Sucess at time $time with timestep $currentTimeStep")
+
         push!(R, newR)
+        if (μ != 0)
+            S = newS
+            V = newV
+            push!(Ω, newΩ)
+        end
+
         push!(timestepRecorder, currentTimeStep)
         push!(attemptsRecorder, attempts)
         i = i + 1
-        time = time + currentTimeStep
+        time = round(time + currentTimeStep, digits=DIGITS)
 
         # Reset / apply strategy
     
@@ -457,7 +534,11 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, strategy =
         println("These profiles were used: ", profiles)
     end
 
-    return (R, timestepRecorder, attemptsRecorder)
+    # Input or no input
+    if μ == 0
+        return (R, timestepRecorder, attemptsRecorder)
+    end
+    return (Ω, timestepRecorder, attemptsRecorder)
 end
 
 

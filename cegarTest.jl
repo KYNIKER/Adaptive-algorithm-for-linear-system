@@ -3,17 +3,17 @@ using Plots, LazySets, LinearAlgebra
 include("helperfunctions.jl")
 include("models.jl")
 
-const UseCrane = true # Crane usually has T = 15
-const μ = 0.000
+const UseCrane = false # Crane usually has T = 15
+const μ = 0.01
 
 Tstart = 0
-T = 15
+T = 4
 initialTimeStep = 0.4
 strategy = 3
-dimToPlot = 6
+dimToPlot = 2
 
 if !UseCrane
-    constraint = HalfSpace([0., 1.], -1.57)
+    constraint = HalfSpace([0., 1.], -1.8)
 else
     constraint = HalfSpace([0., 0., 0., 0., 0., 1.], -1.57)
 end
@@ -38,7 +38,7 @@ end
 
 
 ###
-@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, [Tstart, T], P₁, constraint, strategy)
+@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, [Tstart, T], P₁, constraint, μ, strategy)
 
 
 corners2 = Vector(undef, size(boxes2, 1))
