@@ -323,12 +323,6 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
         newΩ = nothing # This will always be updated later
         prevTime = 0
 
-        # If exceeds endtime, half timestep till it fits
-        while time + currentTimeStep > endtime
-            currentTimeStep = currentTimeStep/2
-            changedTimeStep = true
-        end
-
         while !approveFlag
             if currentTimeStep == 0
                 # We have a model fail
