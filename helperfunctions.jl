@@ -218,16 +218,9 @@ function forwardTimeNoInput(A, R, currentTime)
     return Zonotope(ϕCurrentTime * R.center, ϕCurrentTime * R.generators)
 end
 
-function forwardTime(A, R, currentTime, timestep, ballβ, ϕ)
+function forwardTime(A, R, currentTime, timestep, ballβ, ϕ, prevTime, prevS, prevV)
     newR = forwardTimeNoInput(A, R, currentTime)
-
-    # Note that steps should always work
-    if currentTime % timestep != 0
-        #throw(DomainError(currentTime % timestep, "Error in forwardTime, $currentTime % $timestep != 0"))
-        println("Error in forwardTime, $currentTime % $timestep != 0")
-    end
-
-    steps = floor(Int, currentTime / timestep)
+    steps = floor(Int, (currentTime - prevTime) / timestep)
     S = ballβ
     V = ballβ
     for j in 1:steps
@@ -267,6 +260,8 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
 
     # Dictionary to keep track of initial R and phi for each timestep
     previouslyCalculatedDict = Dict()
+    
+    previousInputValuesDict = Dict()
 
     time = minimum(interval)
     endtime = maximum(interval)
@@ -326,12 +321,13 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
         newS = nothing # This will always be updated later
         newV = nothing # This will always be updated later
         newΩ = nothing # This will always be updated later
+        prevTime = 0
 
-        # If exceeds endtime, change timestep
-        # if time + currentTimeStep > endtime
-        #     currentTimeStep = endtime - time
-        #     changedTimeStep = true
-        # end
+        # If exceeds endtime, half timestep till it fits
+        while time + currentTimeStep > endtime
+            currentTimeStep = currentTimeStep/2
+            changedTimeStep = true
+        end
 
         while !approveFlag
             if currentTimeStep == 0
@@ -343,8 +339,8 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
                 # We make sure to round the timestep
                 currentTimeStep = round(currentTimeStep, digits=DIGITS)
 
-                # We check if the new timestep respects the interval
-                if mod(rationalize(time), rationalize(currentTimeStep)) != 0
+                # We check if the new timestep respects the interval. Only do this if we have an input
+                if μ != 0 && mod(rationalize(time), rationalize(currentTimeStep)) != 0
                     println("Cannot use $currentTimeStep as timestep at time $time")
                     currentTimeStep = currentTimeStep/2
                     continue
@@ -358,6 +354,7 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
                         newR, ϕ = previouslyCalculatedDict[currentTimeStep]
                     else
                         newR, ballβ, ϕ = previouslyCalculatedDict[currentTimeStep]
+                        S, V, prevTime = previousInputValuesDict[currentTimeStep]
                     end
                 else
                     # We calculate and store it
@@ -367,13 +364,15 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
                     else 
                         newR, ballβ, ϕ = initialStep(A, ANorm, currentTimeStep, X0, μ)
                         previouslyCalculatedDict[currentTimeStep] = (newR, ballβ, ϕ)
+                        previousInputValuesDict[currentTimeStep] = (S, V, time)
                     end
                 end
                 # Forward in time
                 if μ == 0
                     newR = forwardTimeNoInput(A, newR, time)
                 else
-                    newR, newS, newV, newΩ = forwardTime(A, newR, time, currentTimeStep, ballβ, ϕ)
+                    newR, newS, newV, newΩ = forwardTime(A, newR, time, currentTimeStep, ballβ, ϕ, prevTime, S, V)
+                    previousInputValuesDict[currentTimeStep] = (newS, newV, time)
                 end
                 changedTimeStep = false
             else
@@ -383,6 +382,7 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
                     newS = minkowski_sum(S, V)
                     newV = linear_map(ϕ, V)
                     newΩ = minkowski_sum(newR, newS)
+                    previousInputValuesDict[currentTimeStep] = (newS, newV, time)
                 end
             end
             
@@ -405,9 +405,6 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
 
         end
         # Found a valid timestep
-
-        println("Sucess at time $time with timestep $currentTimeStep")
-
         push!(R, newR)
         if (μ != 0)
             S = newS
