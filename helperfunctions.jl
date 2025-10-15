@@ -344,7 +344,7 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
                 currentTimeStep = round(currentTimeStep, digits=DIGITS)
 
                 # We check if the new timestep respects the interval
-                if mod(time, currentTimeStep) != 0
+                if mod(rationalize(time), rationalize(currentTimeStep)) != 0
                     println("Cannot use $currentTimeStep as timestep at time $time")
                     currentTimeStep = currentTimeStep/2
                     continue
