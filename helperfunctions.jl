@@ -218,11 +218,11 @@ function forwardTimeNoInput(A, R, currentTime)
     return Zonotope(ϕCurrentTime * R.center, ϕCurrentTime * R.generators)
 end
 
-function forwardTime(A, R, currentTime, timestep, ballβ, ϕ, prevTime, prevS, prevV)
+function forwardTime(A, R, currentTime, timestep, ϕ, prevTime, prevS, prevV)
     newR = forwardTimeNoInput(A, R, currentTime)
     steps = floor(Int, (currentTime - prevTime) / timestep)
-    S = ballβ
-    V = ballβ
+    S = prevS
+    V = prevV
     for j in 1:steps
         S = minkowski_sum(S, V)
         V = linear_map(ϕ, V)
@@ -350,10 +350,8 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
             if changedTimeStep
                 # Check if we have already calculated the initial step
                 if haskey(previouslyCalculatedDict, currentTimeStep)
-                    if μ == 0
-                        newR, ϕ = previouslyCalculatedDict[currentTimeStep]
-                    else
-                        newR, ballβ, ϕ = previouslyCalculatedDict[currentTimeStep]
+                    newR, ϕ = previouslyCalculatedDict[currentTimeStep]
+                    if μ != 0
                         S, V, prevTime = previousInputValuesDict[currentTimeStep]
                     end
                 else
@@ -363,15 +361,18 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint, μ, strate
                         previouslyCalculatedDict[currentTimeStep] = (newR, ϕ)
                     else 
                         newR, ballβ, ϕ = initialStep(A, ANorm, currentTimeStep, X0, μ)
-                        previouslyCalculatedDict[currentTimeStep] = (newR, ballβ, ϕ)
+                        previouslyCalculatedDict[currentTimeStep] = (newR, ϕ)
                         previousInputValuesDict[currentTimeStep] = (S, V, time)
+                        # These should initially be ballβ
+                        S = ballβ
+                        V = ballβ
                     end
                 end
                 # Forward in time
                 if μ == 0
                     newR = forwardTimeNoInput(A, newR, time)
                 else
-                    newR, newS, newV, newΩ = forwardTime(A, newR, time, currentTimeStep, ballβ, ϕ, prevTime, S, V)
+                    newR, newS, newV, newΩ = forwardTime(A, newR, time, currentTimeStep, ϕ, prevTime, S, V)
                     previousInputValuesDict[currentTimeStep] = (newS, newV, time)
                 end
                 changedTimeStep = false
