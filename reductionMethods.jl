@@ -2,7 +2,7 @@ using LazySets, LinearAlgebra
 
 function PCA_reduce(Z, k) # Reduce to k generators
 
-    c = center(Z) # get center
+    c = Z.center # get center
     G = genmat(Z) # Get generators
 
     U, S, V = svd(G) # Apply singular value decomposition (https://www.geeksforgeeks.org/machine-learning/singular-value-decomposition-svd/)
@@ -14,4 +14,17 @@ function PCA_reduce(Z, k) # Reduce to k generators
     G_red = U[:, 1:k] * Diagonal(S[1:k]) # Get top k
 
     return Zonotope(c, G_red)
+end
+
+function box_reduce(Z, k) # Reduce to k generators
+    c = Z.center # get center
+    G = genmat(Z) # Get generators
+
+    G = sortslices(G, dims = 2, by = x->norm(x, 1) - norm(x, Inf))
+
+    k = min(k, size(G, 2)) # Ensure k is not greater than the amount of generators
+
+    G_sorted = G[:, 1:k]
+
+    return Zonotope(c, G_sorted)
 end
