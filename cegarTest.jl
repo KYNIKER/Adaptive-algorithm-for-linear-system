@@ -38,7 +38,7 @@ end
 
 
 ###
-@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, [Tstart, T], P₁, constraint, μ, strategy)
+@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, [Tstart, T], P₁, constraint, strategy)
 
 
 corners2 = Vector(undef, size(boxes2, 1))
