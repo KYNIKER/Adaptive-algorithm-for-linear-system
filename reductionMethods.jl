@@ -27,6 +27,7 @@ function box_reduce(Z, k) # Reduce to k generators
     G = genmat(Z) # Get generators
 
     amountOfGens = size(G, 2)
+    dim = size(G, 1)
     k = min(k, amountOfGens) # Ensure k is not greater than the amount of generators
 
 
@@ -34,14 +35,14 @@ function box_reduce(Z, k) # Reduce to k generators
 
 
     # We split the generators into two groups. Where G1 will be overapproximated
-    G1 = G[:, 1:amountOfGens-(k-1)]
-    G2 = G[:, amountOfGens-(k-2):amountOfGens]
+    G1 = G[:, 1:amountOfGens-(k-(dim-1))]
+    G2 = G[:, amountOfGens-(k-dim):amountOfGens]
 
-    Z1 = Zonotope(zeros(dim(Z)), G1)
+    Z1 = Zonotope(zeros(dim), G1)
     Z2 = Zonotope(c, G2)
 
     Z1HyperRect = interval_hull(Z1) # Note that Z1 will always return something with dims 2. 
-    Z1red = Zonotope(zeros(dim(Z)), [radius_hyperrectangle(Z1HyperRect)])
+    Z1red = Zonotope(zeros(dim), [radius_hyperrectangle(Z1HyperRect)])
 
     Zred = minkowski_sum(Z1red, Z2)
 
