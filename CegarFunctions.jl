@@ -16,7 +16,7 @@ Adjust chance of increase based on previous success of increase.
 Keep different profiles dependt on amount of recent fails. 
 Specifically 0-1, 2-3, 4-5, 6+
 """
-function reachSetsCegar(A, initialTimestep, interval, X0, constraint, strategy = 1, DIGITS::Int = 4)
+function reachSetsCegar(A, initialTimestep, interval, X0, constraint::HalfSpace, strategy::Int = 1, DIGITS = 4)
     if strategy == 1
         return strategy1(A, initialTimestep, interval, X0, constraint, DIGITS)
     elseif strategy == 2
@@ -58,7 +58,7 @@ function strategy1(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
         approveFlag = false
         newR = nothing # This will always be updated later
 
-        currentTimeStep, newR, ϕ, changedTimeStep, attempts = fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, DIGITS)
+        currentTimeStep, newR, ϕ, changedTimeStep, attempts = fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -110,7 +110,7 @@ function strategy2(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
         attempts = 1 # Keep track of number of attempts
         newR = nothing # This will always be updated later
 
-        currentTimeStep, newR, ϕ, changedTimeStep, attempts = fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, DIGITS)
+        currentTimeStep, newR, ϕ, changedTimeStep, attempts = fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -194,7 +194,7 @@ function strategy3(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
         attempts = 1 # Keep track of number of attempts
         newR = nothing # This will always be updated later
 
-        currentTimeStep, newR, ϕ, changedTimeStep, attempts = fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, DIGITS)
+        currentTimeStep, newR, ϕ, changedTimeStep, attempts = fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -261,7 +261,7 @@ function strategy4(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
         attempts = 1 # Keep track of number of attempts
         newR = nothing # This will always be updated later
 
-        currentTimeStep, newR, ϕ, changedTimeStep, attempts = fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, DIGITS)
+        currentTimeStep, newR, ϕ, changedTimeStep, attempts = fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -316,7 +316,7 @@ function strategy4(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
 end
 
 
-function reachSetsCegarInput(A, initialTimestep, interval, X0, constraint, μ, strategy = 1, DIGITS::Int = 4)
+function reachSetsCegarInput(A, initialTimestep, interval, X0, constraint::HalfSpace, μ::Float64, strategy::Int = 1, DIGITS = 4)
     if strategy == 1
         return strategy1Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS)
     elseif strategy == 2
@@ -369,7 +369,7 @@ function strategy1Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
         newΩ = nothing # This will always be updated later
         prevTime = 0
 
-        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, DIGITS)
+        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -439,7 +439,7 @@ function strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
         newΩ = nothing # This will always be updated later
         prevTime = 0
 
-        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, DIGITS)
+        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -541,7 +541,7 @@ function strategy3Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
         newΩ = nothing # This will always be updated later
         prevTime = 0
 
-        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, DIGITS)
+        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -625,7 +625,7 @@ function strategy4Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
         newΩ = nothing # This will always be updated later
         prevTime = 0
 
-        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, DIGITS)
+        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -685,7 +685,7 @@ function strategy4Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
     return (Ω, timestepRecorder, attemptsRecorder)
 end
 
-function fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, DIGITS::Int)
+function fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict, A, ANorm, X0, R, ϕ, attempts, time, i, constraint, DIGITS::Int)
     approveFlag = false
     newR = nothing
     while !approveFlag
@@ -724,7 +724,7 @@ function fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict,
     return currentTimeStep, newR, ϕ, changedTimeStep, attempts
 end
 
-function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict,previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, DIGITS::Int)
+function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict,previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS::Int)
     approveFlag = false
     newR = nothing # This will always be updated later
     newS = nothing # This will always be updated later

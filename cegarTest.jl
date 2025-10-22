@@ -2,6 +2,7 @@
 using Plots, LazySets, LinearAlgebra
 include("helperfunctions.jl")
 include("models.jl")
+include("CegarFunctions.jl")
 
 const UseCrane = false # Crane usually has T = 15
 const μ = 0.01
@@ -9,7 +10,7 @@ const μ = 0.01
 Tstart = 0
 T = 4
 initialTimeStep = 0.4
-strategy = 3
+strategy = 4
 dimToPlot = 2
 
 if !UseCrane
