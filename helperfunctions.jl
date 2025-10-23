@@ -306,4 +306,8 @@ function intersects(z1::Zonotope, z2::Zonotope) #Should be possible to compute t
     isdisjoint(z1, z2)
 end
 
+function smallestDeterminant(A, timestepsizes)
+    trace = tr(A)
+    return timestepsizes[argmin(map(exp, timestepsizes * trace))]
+end
 
