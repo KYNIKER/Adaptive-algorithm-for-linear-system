@@ -138,7 +138,7 @@ function initialStepNoInput(A, ANorm, timestep, X₀)
 
     R = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), α*I(dim(X₀))))
 
-    return (R, ϕ)
+    return (Zonotope(R.center, R.generators), ϕ)
 end
 
 

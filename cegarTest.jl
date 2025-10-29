@@ -2,7 +2,7 @@
 using Plots, LazySets, LinearAlgebra
 include("helperfunctions.jl")
 include("models.jl")
-include("CegarFunctions.jl")
+#include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
 const UseCrane = false # Crane usually has T = 15
@@ -41,7 +41,7 @@ ANorm = norm(A, Inf)
 β = (exp(ANorm*initialTimeStep)-1)*μ/ANorm
 ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
 ###
-@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 4)
+@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
 
 
 corners2 = Vector(undef, size(boxes2, 1))

@@ -1,7 +1,7 @@
 using LazySets, LinearAlgebra
 
 include("helperfunctions.jl")
-
+include("reductionMethods.jl")
 
 """
     cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotope, constraint::HalfSpace, Digits :: Integer)
@@ -12,13 +12,11 @@ Given a LTI system: x' = Ax + Bu(t)
 function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotope, constraint::HalfSpace, Digits :: Integer)
     ANorm = norm(A, Inf)
     initialTimeStepSize = initialTimeStep
-    m = initialTimeStep / 2^(log2(initialTimeStep)+ceil(-log2(10.0^(-Digits))))   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    m = initialTimeStep / 2^(log2(initialTimeStep) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     R = []
-    Ω = []
     changedTimeStep = true
 
-    previouslyCalculatedDict = Dict()
-    previousInputValuesDict = Dict()
+    discritezationDict = Dict()
 
     time = minimum(interval)
     endtime = maximum(interval)
@@ -27,24 +25,33 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     timeStepRecorder = []
     attemptsRecorder = []
 
-    S = Vector{Zonotope}()
-    sizehint!(S, ceil(endtime / m))
-    push!(S, U)
+    println("m:$m")
+
+    V = Vector{Zonotope}()
+    sizehint!(V, ceil(Integer, endtime / m))
+    push!(V, U)
     let ϕ = exp(A*m)
-        for id in 2:(ceil(endtime / m))
-            push!(S,ϕ * S[end])
+        for id in 2:(ceil(Integer,endtime / m))
+            push!(V, Zonotope(ϕ * V[id - 1].center, ϕ * V[id - 1].generators))
         end
     end
 
-    newR = nothing
-    ϕ = nothing
-    i = 1
+    k = size(U.generators, 1)
 
+    S = Vector{Zonotope}()
+    sizehint!(S, size(V, 1))
+    push!(S, U)
+    for id in 2:size(V, 1)
+        push!(S, box_reduce(minkowski_sum(S[id - 1], V[id]), k))
+    end
+
+
+    newR = nothing
+    i = 1
 
     while time < endtime
         attempts = 1
         approveFlag = false
-        prevTime = 0.
 
         while !approveFlag
             if currentTimeStep == 0
@@ -52,24 +59,24 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
             end
 
             if changedTimeStep
-                if haskey(previouslyCalculatedDict, currentTimeStep)
-                    newR, ϕ = previouslyCalculatedDict[currentTimeStep]
-                    prevTime = previousInputValuesDict[currentTimeStep]
+                if haskey(discritezationDict, currentTimeStep)
+                    newR, ϕt = discritezationDict[currentTimeStep]
                 else 
-                    newR, ϕ = initialStepNoInput(A, ANorm, currentTimeStep, X0)
-                    previouslyCalculatedDict[currentTimeStep] = (newR, ϕ)
-                    previousInputValuesDict[currentTimeStep] = time
+                    newR, ϕt = initialStepNoInput(A, ANorm, currentTimeStep, X0)
+                    discritezationDict[currentTimeStep] = (newR, ϕt)
                 end
-                # So we have calculated the discritezation with the current timestep and then we teleport it.
-                # We should probably store the teleportation matrix and just perform the teleportation without calling the function.
-                newR = forwardTimeNoInput(A, newR, time)
+
+                ϕT = exp(A * time)
+                
+                newR = linear_map(ϕT, newR)
                 changedTimeStep = false
             else 
-                newR = linear_map(ϕ, R[i - 1])
+                _, ϕt = discritezationDict[currentTimeStep]
+                newR = linear_map(ϕt, R[i - 1])
             end
 
             msum = minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / m)])
-            if !intersects(constraint, msum)
+            if !intersects(msum, constraint)
                 approveFlag = true
             else 
                 currentTimeStep = currentTimeStep / 2
