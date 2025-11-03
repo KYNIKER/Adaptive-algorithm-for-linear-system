@@ -218,6 +218,20 @@ function forwardTimeNoInput(A, R, currentTime)
     return Zonotope(ϕCurrentTime * R.center, ϕCurrentTime * R.generators)
 end
 
+# We reuse the previous S, and do not recompute it
+function forwardTimeReUse(A, R, currentTime, ϕ, ballβ, prevS)
+    newR = forwardTimeNoInput(A, R, currentTime)
+    V = linear_map(exp(A*currentTime), ballβ)
+
+    S = minkowski_sum(prevS, V)
+    V = linear_map(ϕ, V)
+
+    newΩ = minkowski_sum(newR, S)
+
+    #println("Set S, V: $S, $V with steps $steps")
+    return (newR, S, V, newΩ)
+end
+
 function forwardTime(A, R, currentTime, timestep, ϕ, prevTime, prevS, prevV)
     newR = forwardTimeNoInput(A, R, currentTime)
     steps = floor(Int, (currentTime - prevTime) / timestep)
