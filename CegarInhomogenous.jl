@@ -92,8 +92,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
                 newR = linear_map(ϕt, R[i - 1])
             end
 
-            msum = minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / initialTimeStep)])
-            if !intersects(msum, constraint)
+            msum::Zonotope = minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / initialTimeStep)])
+            if !intersectss(Zonotope(msum.center, msum.generators), constraint)
                 approveFlag = true
             else 
                 currentTimeStep = currentTimeStep / 2
