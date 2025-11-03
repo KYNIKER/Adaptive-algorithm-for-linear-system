@@ -17,7 +17,9 @@ Keep different profiles dependt on amount of recent fails.
 Specifically 0-1, 2-3, 4-5, 6+
 """
 function reachSetsCegar(A, initialTimestep, interval, X0, constraint::HalfSpace, strategy::Int = 1, DIGITS = 4)
-    if strategy == 1
+    if strategy == 0
+        return strategy0(A, initialTimestep, interval, X0, constraint, DIGITS)
+    elseif strategy == 1
         return strategy1(A, initialTimestep, interval, X0, constraint, DIGITS)
     elseif strategy == 2
         return strategy2(A, initialTimestep, interval, X0, constraint, DIGITS)
@@ -26,8 +28,55 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint::HalfSpace,
     elseif strategy == 4
         return strategy4(A, initialTimestep, interval, X0, constraint, DIGITS)
     else 
-        throw(DomainError(strategy, "argument must be 1, 2, 3 or 4"))
+        throw(DomainError(strategy, "argument must be 0, 1, 2, 3 or 4"))
     end
+end
+
+# Naive solution. Half timestep on fail and reset completely
+function strategy0(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
+    startTime = minimum(interval)
+    endTime = maximum(interval)
+    finishFlag = false
+    timestep = initialTimestep
+    ANorm = norm(A, Inf)
+    i = 1
+    # Run till finished, or fail
+    R = []
+    while !finishFlag
+        intersectFlag = false
+        newR, ϕ = initialStepNoInput(A, ANorm, timestep, X0)
+        # Update R to fit startTime
+        push!(R, forwardTimeNoInput(A, newR, startTime))
+
+        currentTime = startTime + timestep
+        while currentTime < endTime && intersectFlag == false
+            i = i + 1
+            newR = linear_map(ϕ, R[i-1])
+
+            if intersects(constraint, newR)
+                intersectFlag = true
+            else
+                push!(R, newR)
+                currentTime = currentTime + timestep
+            end
+        end
+        if intersectFlag
+            timestep = timestep / 2
+            R = [] # Reset timer
+            i = 1
+        else
+            finishFlag = true
+        end
+    end
+
+    # Set timestep recorder
+    amountOfPoints = length(R)
+
+    timestepRecorder = collect(Iterators.repeated(timestep, amountOfPoints))
+    attemptsRecorder = collect(Iterators.repeated(1, amountOfPoints))
+
+    # End of main loop
+    return (R, timestepRecorder, attemptsRecorder)
 end
 
 function strategy1(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
