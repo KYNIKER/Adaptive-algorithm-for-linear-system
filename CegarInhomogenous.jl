@@ -12,35 +12,50 @@ Given a LTI system: x' = Ax + Bu(t)
 function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotope, constraint::HalfSpace, Digits :: Integer)
     ANorm = norm(A, Inf)
     initialTimeStepSize = initialTimeStep
-    m = initialTimeStep / 2^(log2(initialTimeStep) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    m = initialTimeStep / 2^(floor(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     R = []
     changedTimeStep = true
 
     discritezationDict = Dict()
+    inputDiscritezationDict = Dict()
 
     time = minimum(interval)
     endtime = maximum(interval)
 
     currentTimeStep = initialTimeStep
-    timeStepRecorder = []
-    attemptsRecorder = []
+    timeStepRecorder = Float64[]
+    attemptsRecorder = Integer[]
 
     println("m:$m")
+    k = size(U.generators, 2)
+
+    let ϕ = exp(A * m)
+        d = m
+        P = box_reduce(minkowski_sum(U, linear_map(ϕ, U)), k)
+        while d < initialTimeStep
+            println(d)
+            inputDiscritezationDict[d] = P
+            P = box_reduce(minkowski_sum(P, linear_map(ϕ, P)), k)
+            ϕ = ϕ * ϕ
+            d = d * 2
+        end
+        inputDiscritezationDict[d] = P
+    end
+
 
     V = Vector{Zonotope}()
-    sizehint!(V, ceil(Integer, endtime / m))
-    push!(V, U)
-    let ϕ = exp(A*m)
-        for id in 2:(ceil(Integer,endtime / m))
+    sizehint!(V, ceil(Integer, endtime / initialTimeStep))
+    push!(V, inputDiscritezationDict[initialTimeStep])
+    let ϕ = exp(A * initialTimeStep)
+        for id in 2:(ceil(Integer, endtime / initialTimeStep))
             push!(V, Zonotope(ϕ * V[id - 1].center, ϕ * V[id - 1].generators))
         end
     end
 
-    k = size(U.generators, 1)
 
     S = Vector{Zonotope}()
     sizehint!(S, size(V, 1))
-    push!(S, U)
+    push!(S, V[1])
     for id in 2:size(V, 1)
         push!(S, box_reduce(minkowski_sum(S[id - 1], V[id]), k))
     end
@@ -48,6 +63,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
 
     newR = nothing
     i = 1
+
+    println("volume of S[1]: ", area(S[1]))
 
     while time < endtime
         attempts = 1
@@ -75,7 +92,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
                 newR = linear_map(ϕt, R[i - 1])
             end
 
-            msum = minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / m)])
+            msum = minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / initialTimeStep)])
             if !intersects(msum, constraint)
                 approveFlag = true
             else 
