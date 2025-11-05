@@ -56,7 +56,7 @@ function loadCosWave()
            -2.5 0.]
     P = Zonotope([0., 1.5], [[0.0; 0.05]])
 
-    constraint = HalfSpace([0., 1.], -1.7)
+    constraint = HalfSpace([0., 1.], -1.8)
     T = [0, 8]
     dimToPlot = 2
     return A, P, constraint, T, dimToPlot
@@ -93,8 +93,11 @@ function loadEclipse()
     generators = (α * 0.1 + (1 - α) * 0.2) * Matrix(I, 2, 2);
 
     Z0 = Zonotope(center, generators)
+    constraint = HalfSpace([0., 1.], -5.)
+    T = [0, 15]
+    dimToPlot = 2
 
-    return (A, Z0)
+    return A, Z0, constraint, T, dimToPlot
 end
 
 # T = 5
@@ -116,23 +119,28 @@ function loadFiveDimSys()
 
     Z0 = convert(Zonotope, X0)
 
-    return (A, Z0)
+    T = [0, 5]
+    constraint = HalfSpace([0., 0., 0, 1., 0.], -5.)
+    dimToPlot = 4
+
+    return A, Z0, constraint, T, dimToPlot
 end
 
 
 # T = 20
 # https://github.com/JuliaReach/ReachabilityModels.jl/blob/master/src/models/projectile/projectile_meta.jl
 function loadProjectile()
-    dims = 4
-    A = zeros(Float64, dims, dims)
-
-    A[1, 3] = 0.5
-    A[2, 4] = 0.7
+    A = sparse([1, 3], [2, 4], [0.5, 0.7], 4, 4)
+    A = Matrix(A)
 
     X0 = Singleton([0.0, 5.0, 100.0, 0.0])
-    Z0 = convert(Zonotope, X0)
+    Z0 = convert(Zonotope, X0)  
 
-    return (A, Z0)
+    T = [0, 20]
+    constraint = HalfSpace([1, 0., 0, 0.], -0.5)
+    dimToPlot = 1
+
+    return A, Z0, constraint, T, dimToPlot
 end
 
 # T = 20
@@ -157,7 +165,14 @@ function loadVehiclePlatoon5()
      0 0 0 0 0 0 0 0 0 0 0 1 0 0 -1;
      0.371312203 1.7020668208 0.0226660281 0.40562171 1.7788255402 0.0548847337 0.493771732 1.9669723853 0.121792553 0.7153224517 2.3973578876 0.3887091083 1.7152555329 3.9705119979 -3.9713435656]
 
-    return (A, Z0)
+    T = [0, 20]
+    halfspaceInput = zeros(15)
+    dimToPlot = 11
+    halfspaceInput[dimToPlot] = 1
+    constraint = HalfSpace(halfspaceInput, -1.)
+
+
+    return A, Z0, constraint, T, dimToPlot
 
 end
 # T = 20
@@ -197,5 +212,12 @@ function loadVehiclePlatoon10()
      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 -1;
      0.1915519365 1.1870736849 0.0040303349 0.1959798161 1.2000616712 0.0084288284 0.2053722857 1.2272744627 0.0136613491 0.2209733477 1.2715254674 0.0204450405 0.2451870315 1.3380847578 0.0300737915 0.2826700395 1.4367238883 0.0452682837 0.3432262354 1.5868683922 0.0729554998 0.4511589195 1.8332294303 0.1370836498 0.688678844 2.3125837761 0.4023845862 1.702423734 3.929356551 -3.9584137913]
 
-    return (A, Z0)
+    T = [0, 20]
+    halfspaceInput = zeros(30)
+    dimToPlot = 2
+    halfspaceInput[dimToPlot] = 1
+    constraint = HalfSpace(halfspaceInput, -1.)
+
+
+    return A, Z0, constraint, T, dimToPlot
 end
