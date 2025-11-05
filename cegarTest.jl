@@ -11,7 +11,7 @@ const μ = 0.01
 Tstart = 0
 T = 4
 initialTimeStep = 0.4
-strategy = 4
+strategy = 1
 dimToPlot = 2
 
 if !UseCrane
@@ -38,10 +38,18 @@ else
     p = plot(dpi=300, thickness_scaling=1, ylims=(-1.75, 2.5))
 end
 ANorm = norm(A, Inf)
-β = (exp(ANorm*initialTimeStep)-1)*μ/ANorm
+β = (exp(ANorm*(0.1))-1)*μ/ANorm
 ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
 ###
-@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
+#ProfileView.Profile.init()
+#using ProfileCanvas
+#ProfileCanvas.@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
+#@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 2)
+@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 3)
+
+#@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
+
+#@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, [Tstart, T], P₁, constraint, strategy, 2)
 
 
 corners2 = Vector(undef, size(boxes2, 1))

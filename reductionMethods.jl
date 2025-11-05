@@ -31,8 +31,8 @@ function box_reduce(Z::Zonotope, k::Number) # Reduce to k generators
     k = min(k, amountOfGens) # Ensure k is not greater than the amount of generators
 
     com = map(x->norm(x, 1) - norm(x, Inf), eachcol(G))
-    G = G[:,sortperm(com)]
-    #G = sortslices(G, dims = 2, by = x->norm(x, 1) - norm(x, Inf))
+    #G = G[:,sortperm(com)]
+    G = sortslices(G, dims = 2, by = x->norm(x, 1) - norm(x, Inf))
 
 
     # We split the generators into two groups. Where G1 will be overapproximated

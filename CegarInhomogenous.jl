@@ -14,7 +14,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     f::Float64 = constraint.b 
     ANorm = norm(A, Inf)
     initialTimeStepSize = initialTimeStep
-    m = initialTimeStep / 2^(floor(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     R = []
     changedTimeStep = true
 
@@ -33,23 +33,23 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
 
     let ϕ = exp(A * m)
         d = m
-        P = box_reduce(minkowski_sum(U, linear_map(ϕ, U)), k)
+        P = PCA_reduce(minkowski_sum(U, linear_map(ϕ, U)), k)
         while d < initialTimeStep
             println(d)
             inputDiscritezationDict[d] = P
-            P = box_reduce(minkowski_sum(P, linear_map(ϕ, P)), k)
+            P = minkowski_sum(P, linear_map(ϕ, P))
             ϕ = ϕ * ϕ
             d = d * 2
         end
-        inputDiscritezationDict[d] = P
+        inputDiscritezationDict[initialTimeStep] = PCA_reduce(P, k)
     end
 
 
     V = Vector{Zonotope}()
-    sizehint!(V, ceil(Integer, endtime / initialTimeStep))
+    sizehint!(V, ceil(Integer, endtime / initialTimeStep) + 1)
     push!(V, inputDiscritezationDict[initialTimeStep])
     let ϕ = exp(A * initialTimeStep)
-        for id in 2:(ceil(Integer, endtime / initialTimeStep))
+        for id in 2:(ceil(Integer, endtime / initialTimeStep) + 1)
             push!(V, Zonotope(ϕ * V[id - 1].center, ϕ * V[id - 1].generators))
         end
     end
@@ -59,22 +59,27 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     sizehint!(S, size(V, 1))
     push!(S, V[1])
     for id in 2:size(V, 1)
-        push!(S, box_reduce(minkowski_sum(S[id - 1], V[id]), k))
+        push!(S, PCA_reduce(minkowski_sum(S[id - 1], V[id]), k))
+        #push!(S, minkowski_sum(S[id - 1], V[id]))
+
     end
 
 
     newR = nothing
     i = 1
-
-    println("volume of S[1]: ", area(S[1]))
+    for i in eachindex(S)
+        println("volume of S[",i,"]: ", area(S[i]))
+        #println("volume of V[",i,"]: ", area(V[i]))
+    end
 
     while time < endtime
         attempts = 1
         approveFlag = false
 
         while !approveFlag
-            if currentTimeStep == 0
-                throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
+            if currentTimeStep < m
+                println(timeStepRecorder)
+                throw(AssertionError("Error model fails at time $time, constraint is not satisfied after $attempts attempts"))
             end
 
             if changedTimeStep
@@ -98,7 +103,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
             if !intersectss(msum.center, genmat(msum), h, f)
                 approveFlag = true
             else 
-                currentTimeStep = currentTimeStep / 2
+                currentTimeStep = currentTimeStep / 2 
                 changedTimeStep = true
                 attempts = attempts + 1
             end
@@ -112,8 +117,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
         time = round(time + currentTimeStep, digits=Digits)
 
         # Reset / apply strategy
-        if currentTimeStep == initialTimeStepSize
-            currentTimeStep = initialTimeStep
+        if currentTimeStep < initialTimeStepSize
+            currentTimeStep = currentTimeStep * 2
             changedTimeStep = true
         end
     end
