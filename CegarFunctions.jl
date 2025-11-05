@@ -745,15 +745,15 @@ function fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict,
     approveFlag = false
     newR = nothing
     while !approveFlag
-        if currentTimeStep == 0
-            # We have a model fail
-            throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
-        elseif changedTimeStep
+        if changedTimeStep
             # We make sure to round the timestep
             currentTimeStep = round(currentTimeStep, digits=DIGITS)
-        end
 
-        if changedTimeStep
+            if currentTimeStep == 0
+                # We have a model fail
+                throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
+            end
+
             # Check if we have already calculated the initial step, else calculate it
             if !haskey(previouslyCalculatedDict, currentTimeStep)
                 previouslyCalculatedDict[currentTimeStep] = initialStepNoInput(A, ANorm, currentTimeStep, X0)
@@ -788,12 +788,14 @@ function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculated
     newΩ = nothing # This will always be updated later
     prevTime = 0
     while !approveFlag
-        if currentTimeStep == 0
-            # We have a model fail
-            throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
-        elseif changedTimeStep
+        if changedTimeStep
             # We make sure to round the timestep
             currentTimeStep = round(currentTimeStep, digits=DIGITS)
+
+            if currentTimeStep == 0
+                # We have a model fail
+                throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
+            end
 
             # We check if the new timestep respects the interval. Only do this if we have an input
             if mod(rationalize(time), rationalize(currentTimeStep)) != 0
@@ -852,12 +854,14 @@ function fitTimeStepInputReUse(currentTimeStep, changedTimeStep, previouslyCalcu
     newΩ = nothing # This will always be updated later
     ballβ = nothing
     while !approveFlag
-        if currentTimeStep == 0
-            # We have a model fail
-            throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
-        elseif changedTimeStep
+        if changedTimeStep
             # We make sure to round the timestep
             currentTimeStep = round(currentTimeStep, digits=DIGITS)
+
+            if currentTimeStep == 0
+                # We have a model fail
+                throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
+            end
         end
 
         if changedTimeStep

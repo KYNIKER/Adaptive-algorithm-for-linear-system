@@ -4,7 +4,7 @@ include("helperfunctions.jl")
 include("models.jl")
 include("CegarFunctions.jl")
 
-const UseCrane = false # Crane usually has T = 15
+const UseCrane = true # Crane usually has T = 15
 const μ = 0.01
 
 Tstart = 0
@@ -13,22 +13,15 @@ initialTimeStep = 0.4
 strategy = 3
 dimToPlot = 2
 digits = 4
-reuse = false
-
-if !UseCrane
-    constraint = HalfSpace([0., 1.], -1.6)
-else
-    constraint = HalfSpace([0., 0., 0., 0., 0., 1.], -1.57)
-end
+reuse = true
 
 # const tΔ = 0.01
 # const r = 1.2
 
-
-A, P₁ = loadCosWave()
+A, P₁, constraint, T, dimToPlot = loadCosWave()
 #A, P₁ = loadCrane()
 if UseCrane
-    A, P₁ = loadCrane()
+    A, P₁, constraint, T, dimToPlot = loadCrane()
 end
 
 p = nothing
@@ -41,8 +34,8 @@ end
 
 
 ###
-@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, [Tstart, T], P₁, constraint, μ, strategy, digits, reuse)
-#@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, [Tstart, T], P₁, constraint, strategy, digits)
+@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
+#@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
 
 corners2 = Vector(undef, size(boxes2, 1))
 

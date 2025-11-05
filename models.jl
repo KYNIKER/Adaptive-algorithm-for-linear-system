@@ -1,15 +1,65 @@
-using Plots, LazySets, LinearAlgebra, SparseArrays
-using MAT
-# https://juliaio.github.io/MAT.jl/stable/methods/
+using Plots, LazySets, LinearAlgebra, SparseArrays, JLD2
+using LazySets.Arrays
 
+# Tmax = [0.10369, 0.02966, 0.01716, 0.01161, 0.01005]
+# From https://gitlab.com/goranf/ARCH-COMP/-/blob/master/2024/AFF/JuliaReach/models/Heat3D/heat3d.jl?ref_type=heads
+function loadHeat01(;)
+    @load joinpath(@__DIR__, "JLD2_Files/HEAT01.jld2") A xind
 
+    n = size(A, 1)
+    x0ind = xind.nzind
+    xc = 62 + 1
 
+    c = sparsevec(x0ind, fill(1.0, length(x0ind)), n)
+    r = sparsevec(x0ind, fill(0.1, length(x0ind)), n)
+    Ω₀ = Hyperrectangle(c, r)
+
+    ℓ = SingleEntryVector(xc, n, 1.0)
+
+    A = Matrix(A)
+    X0 = convert(Zonotope, Ω₀)
+    X0 = Zonotope(Vector(X0.center), Matrix(X0.generators)) # Convert to dense
+    constraint = HalfSpace(ℓ, 0.10369)
+    T = [0, 40]
+    dimToPlot = xc
+
+    return A, X0, constraint, T, dimToPlot
+end
+
+function loadHeat02(;)
+    @load joinpath(@__DIR__, "JLD2_Files/HEAT02.jld2") A xind
+
+    n = size(A, 1)
+    x0ind = xind.nzind
+    xc = 555 + 1
+
+    c = sparsevec(x0ind, fill(1.0, length(x0ind)), n)
+    r = sparsevec(x0ind, fill(0.1, length(x0ind)), n)
+    Ω₀ = Hyperrectangle(c, r)
+
+    ℓ = SingleEntryVector(xc, n, 1.0)
+
+    A = Matrix(A)
+    X0 = convert(Zonotope, Ω₀)
+    X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
+    constraint = HalfSpace(ℓ, 0.02966)
+    T = [0, 40]
+    dimToPlot = xc
+
+    return A, X0, constraint, T, dimToPlot
+end
+
+# Simple models
 
 function loadCosWave()
     A = [0. 1.; 
            -2.5 0.]
     P = Zonotope([0., 1.5], [[0.0; 0.05]])
-    return (A, P)
+
+    constraint = HalfSpace([0., 1.], -1.7)
+    T = [0, 8]
+    dimToPlot = 2
+    return A, P, constraint, T, dimToPlot
 end
 
 
@@ -26,7 +76,10 @@ function loadCrane() # From https://github.com/JuliaReach/ReachabilityModels.jl/
       [2.5, 0.0, 0.2, 0.1, 0.0, 0.0])
 
     X0 = convert(Zonotope, X0)
-    return (A, X0)
+    constraint = HalfSpace([0., 0., 0., 0., 0., 1.], -1.57)
+    T = [0, 15]
+    dimToPlot = 6
+    return A, X0, constraint, T, dimToPlot
 end
 
 # T = 15
@@ -145,50 +198,4 @@ function loadVehiclePlatoon10()
      0.1915519365 1.1870736849 0.0040303349 0.1959798161 1.2000616712 0.0084288284 0.2053722857 1.2272744627 0.0136613491 0.2209733477 1.2715254674 0.0204450405 0.2451870315 1.3380847578 0.0300737915 0.2826700395 1.4367238883 0.0452682837 0.3432262354 1.5868683922 0.0729554998 0.4511589195 1.8332294303 0.1370836498 0.688678844 2.3125837761 0.4023845862 1.702423734 3.929356551 -3.9584137913]
 
     return (A, Z0)
-end
-
-
-
-# THE MODELS BELOW ARE NOT WORKING
-
-
-# T = 20
-# https://github.com/JuliaReach/ReachabilityModels.jl/blob/master/src/models/motor/motor.jl
-function _loadMotor()
-    # Does not work atm
-    dims = 8
-
-    I = [1, 2, 2, 3, 3, 3, 3, 4, 5, 6, 6, 7, 7, 7, 7, 8]
-    J = [2, 3, 2, 1, 2, 3, 4, 1, 6, 7, 6, 5, 6, 7, 8, 5]
-    V = [1, 8487.2, -1.0865, -2592.1, -21.119, -698.91, -141399.0, 1.0, 1.0,
-        8487.2, -1.0865, -2592.1, -21.119, -698.91, -141399.0, 1.0]
-
-    A = zeros(Float64, dims, dims)
-
-    elementsLen = length(I)
-    for i in 1:elementsLen
-        A[I[i], J[i]] = V[i]
-    end
-
-    X0 = Hyperrectangle(; low=[0.002, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0],
-      high=[0.0025, 0.0, 0.0, 0.0, 0.0015, 0.0, 0.0, 0.0])
-
-    Z0 = convert(Zonotope, X0)
-
-    return (A, Z0)
-end
-
-
-
-function _loadBuilding()
-    # TODO This currently does not work 
-    
-    file = matopen("MAT_Files/building.mat")
-
-    A = read(file, "A")
-
-    X0 = Hyperrectangle(; low=[fill(0.0002, 10); zeros(14); -0.0001; zeros(23)], high=[fill(0.00025, 10); zeros(14); 0.0001; zeros(23)])
-    X0 = convert(Zonotope, X0)
-
-    return (A, X0)
 end
