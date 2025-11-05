@@ -295,11 +295,18 @@ end
 
 #intersects function is based upon "Set operations and order reductions for constrained zonotopes" - Vignesh Raghuraman, Justin P. Koeln
 #Note that this only returns true if they intersect and does not depend on whether the intersection between them is empty.
-function intersects(zonotope::Zonotope, halfspace::HalfSpace)
-    h, f = tosimplehrep(halfspace)
-    l = abs(only(f) - dot(h', zonotope.center))
-    r = sum(abs.(zonotope.generators .* h'))
-    return l <= r
+function intersects(zonotope::Zonotope, halfspace::HalfSpace) :: Bool
+    c::Vector{Float64} = zonotope.center
+    G::Matrix{Float64} = genmat(zonotope)
+    h::Vector{Float64} = halfspace.a
+    f::Float64 = halfspace.b 
+    d = c + h
+    #d::Vector{Float64} = c.*h
+    #l::Float64 = abs(f - dot(c, h))#sum(c.* h)
+    #l = abs(l)# < 0 ? -1 * l : l
+    #t::Matrix{Float64} = h'
+    #r::Float64 = sum(abs.(G .* h))
+    return false#l <= r
 end
 
 function intersects(halfspace::HalfSpace, zonotope::Zonotope)
@@ -308,6 +315,15 @@ end
 
 function intersects(z1::Zonotope, z2::Zonotope) #Should be possible to compute this from above paper by viewing the zonotopes as being constrained but with no constrains and whether their intersecting zonotope has empty 
     isdisjoint(z1, z2)
+end
+
+function intersectss(c::Vector{Float64}, G::Matrix{Float64}, h::Vector{Float64}, f::Float64) :: Bool
+    #c::Vector{Float64} = zonotope.center
+    #G::Matrix{Float64} = genmat(zonotope)
+    #println(h, reshape(halfspace.a, (1,:)))
+    l::Float64 = abs(f - dot(h, c))
+    r::Float64 = sum(abs.(G .* h))
+    return l <= r
 end
 
 function smallestDeterminant(A, timestepsizes)

@@ -10,6 +10,8 @@ Based on "Efficient Computation of Reachable Sets of Linear Time-Invariant Syste
 Given a LTI system: x' = Ax + Bu(t)
 """
 function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotope, constraint::HalfSpace, Digits :: Integer)
+    h::Vector{Float64} = constraint.a
+    f::Float64 = constraint.b 
     ANorm = norm(A, Inf)
     initialTimeStepSize = initialTimeStep
     m = initialTimeStep / 2^(floor(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
@@ -93,7 +95,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
             end
 
             msum::Zonotope = minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / initialTimeStep)])
-            if !intersects(Zonotope(msum.center, msum.generators), constraint)
+            if !intersectss(msum.center, genmat(msum), h, f)
                 approveFlag = true
             else 
                 currentTimeStep = currentTimeStep / 2
