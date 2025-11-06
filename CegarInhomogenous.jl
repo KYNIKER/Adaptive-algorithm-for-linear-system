@@ -1,4 +1,4 @@
-using LazySets, LinearAlgebra
+using LazySets, LinearAlgebra, Printf
 
 include("helperfunctions.jl")
 include("reductionMethods.jl")
@@ -28,14 +28,13 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     timeStepRecorder = Float64[]
     attemptsRecorder = Integer[]
 
-    println("m:$m")
+    #println("m:$m")
     k = size(U.generators, 2)
 
     let ϕ = exp(A * m)
         d = m
         P = PCA_reduce(minkowski_sum(U, linear_map(ϕ, U)), k)
         while d < initialTimeStep
-            println(d)
             inputDiscritezationDict[d] = P
             P = minkowski_sum(P, linear_map(ϕ, P))
             ϕ = ϕ * ϕ
@@ -64,11 +63,10 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
 
     end
 
-
     newR = nothing
     i = 1
     for i in eachindex(S)
-        println("volume of S[",i,"]: ", area(S[i]))
+        @printf "volume of S[%d]: %.12f\n" i area(S[i])
         #println("volume of V[",i,"]: ", area(V[i]))
     end
 
@@ -79,6 +77,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
         while !approveFlag
             if currentTimeStep < m
                 println(timeStepRecorder)
+                return (R, timeStepRecorder, attemptsRecorder)
                 throw(AssertionError("Error model fails at time $time, constraint is not satisfied after $attempts attempts"))
             end
 
@@ -102,6 +101,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
             msum::Zonotope = minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / initialTimeStep)])
             if !intersectss(msum.center, genmat(msum), h, f)
                 approveFlag = true
+                newR = msum
             else 
                 currentTimeStep = currentTimeStep / 2 
                 changedTimeStep = true

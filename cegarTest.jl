@@ -13,9 +13,10 @@ T = 4
 initialTimeStep = 0.4
 strategy = 1
 dimToPlot = 2
+Digits = 3
 
 if !UseCrane
-    constraint = HalfSpace([0., 1.], -1.8)
+    constraint = HalfSpace([0., 1.], -2.8)
 else
     constraint = HalfSpace([0., 0., 0., 0., 0., 1.], -1.57)
 end
@@ -35,17 +36,19 @@ p = nothing
 if UseCrane
     p = plot(dpi=300, thickness_scaling=1)
 else
-    p = plot(dpi=300, thickness_scaling=1, ylims=(-1.75, 2.5))
+    p = plot(dpi=300, thickness_scaling=1, ylims=(-1.85, 2.5))
 end
 ANorm = norm(A, Inf)
-β = (exp(ANorm*(0.1))-1)*μ/ANorm
+m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+β = (exp(ANorm*(m))-1)*μ/ANorm
+println("original area ballβ: ", area(Zonotope(zeros(dim(P₁)), ((exp(ANorm*(initialTimeStep))-1)*μ/ANorm)*I(dim(P₁)))))
 ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
 ###
 #ProfileView.Profile.init()
 #using ProfileCanvas
 #ProfileCanvas.@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
 #@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 2)
-@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 3)
+@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, Digits)
 
 #@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
 
