@@ -5,30 +5,24 @@ include("models.jl")
 #include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
-const UseCrane = false # Crane usually has T = 15
+const UseCrane = true # Crane usually has T = 15
 const μ = 0.01
 
-Tstart = 0
-T = 4
+Tstart = 0.0
+T = 4.
 initialTimeStep = 0.4
-strategy = 1
+strategy = 2
 dimToPlot = 2
-Digits = 3
-
-if !UseCrane
-    constraint = HalfSpace([0., 1.], -2.8)
-else
-    constraint = HalfSpace([0., 0., 0., 0., 0., 1.], -1.57)
-end
+Digits = 4
+reuse = false
 
 # const tΔ = 0.01
 # const r = 1.2
 
-
-A, P₁ = loadCosWave()
+A, P₁, constraint, T, dimToPlot = loadCosWave()
 #A, P₁ = loadCrane()
 if UseCrane
-    A, P₁ = loadCrane()
+    A, P₁, constraint, T, dimToPlot = loadCrane()
 end
 
 p = nothing
@@ -41,14 +35,14 @@ end
 ANorm = norm(A, Inf)
 m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
 β = (exp(ANorm*(m))-1)*μ/ANorm
-println("original area ballβ: ", area(Zonotope(zeros(dim(P₁)), ((exp(ANorm*(initialTimeStep))-1)*μ/ANorm)*I(dim(P₁)))))
+#println("original area ballβ: ", area(Zonotope(zeros(dim(P₁)), ((exp(ANorm*(initialTimeStep))-1)*μ/ANorm)*I(dim(P₁)))))
 ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
 ###
 #ProfileView.Profile.init()
 #using ProfileCanvas
 #ProfileCanvas.@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
 #@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 2)
-@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, Digits)
+@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 
 #@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
 

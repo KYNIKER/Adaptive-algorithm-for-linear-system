@@ -122,7 +122,7 @@ function initialStep(A, ANorm, timestep, X₀, μ)
 
     R = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), (α+β)*I(dim(X₀))))
 
-    ballβ = Zonotope(zeros(dim(X₀)), β*I(dim(X₀)))
+    ballβ = Zonotope(zeros(dim(X₀)), diagm(β*ones(dim(X₀))))
 
     return (R, ballβ, ϕ)
 end
@@ -213,21 +213,37 @@ function reachSetsForTimesteps(A, timesteps, interval, X₀, μ)
 end
 
 # Move a zonotope forward in time, assumes no input
-function forwardTimeNoInput(A, R, currentTime)
+function forwardTimeNoInput(A, R, currentTime) 
     ϕCurrentTime = exp(A*currentTime)
-    return Zonotope(ϕCurrentTime * R.center, ϕCurrentTime * R.generators)
+    return linear_map(ϕCurrentTime, R)
 end
 
-function forwardTime(A, R, currentTime, timestep, ϕ, prevTime, prevS, prevV)
-    newR = forwardTimeNoInput(A, R, currentTime)
-    steps = floor(Int, (currentTime - prevTime) / timestep)
-    S = prevS
-    V = prevV
-    for j in 1:steps
-        S = minkowski_sum(S, V)
-        V = linear_map(ϕ, V)
-    end
+# We reuse the previous S, and do not recompute it
+function forwardTimeReUse(A, R, currentTime, ϕ, ballβ, prevS) 
+    newR = linear_map(exp(A*currentTime), R)
+    #newR = forwardTimeNoInput(A, R, currentTime)
+    V = linear_map(exp(A*currentTime), ballβ)
+
+    S = minkowski_sum(prevS, V)
+    V = linear_map(ϕ, V)
+
     newΩ = minkowski_sum(newR, S)
+
+    #println("Set S, V: $S, $V with steps $steps")
+    return (newR, S, V, newΩ)
+end
+
+function forwardTime(A :: Matrix{Float64}, R :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}}, currentTime :: Float64, timestep :: Float64, ϕ :: Matrix{Float64}, prevTime :: Float64, prevS :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}}, prevV :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}})
+    newR :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}} = linear_map(exp(A*currentTime), R)
+    #newR :: Zonotope = forwardTimeNoInput(A, R, currentTime)
+    steps = floor(Int, (currentTime - prevTime) / timestep)
+    S = prevS 
+    V = prevV 
+    for j in 1:steps
+        S :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}} = minkowski_sum(S, V) # this one
+        V :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}} = linear_map(ϕ, V) # this one
+    end
+    newΩ :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}} = minkowski_sum(newR, S)
 
     #println("Set S, V: $S, $V with steps $steps")
     return (newR, S, V, newΩ)
@@ -295,19 +311,34 @@ end
 
 #intersects function is based upon "Set operations and order reductions for constrained zonotopes" - Vignesh Raghuraman, Justin P. Koeln
 #Note that this only returns true if they intersect and does not depend on whether the intersection between them is empty.
+function intersectss(c::Vector{Float64}, G::Matrix{Float64}, h::Vector{Float64}, f::Float64) :: Bool
+    #c::Vector{Float64} = zonotope.center
+    #G::Matrix{Float64} = genmat(zonotope)
+    #println(h, reshape(halfspace.a, (1,:)))
+    l::Float64 = abs(f - dot(h, c))
+    r::Float64 = sum(abs.(G .* h))
+    return l <= r
+end
+
+#=function intersects(zonotope::Zonotope, halfspace::HalfSpace)
+    h, f = tosimplehrep(halfspace)
+    l = abs(only(f) - dot(h', zonotope.center))
+    r = sum(abs.(zonotope.generators .* h'))
+    return l <= r
+end=#
 function intersects(zonotope::Zonotope, halfspace::HalfSpace) :: Bool
     c::Vector{Float64} = zonotope.center
     G::Matrix{Float64} = genmat(zonotope)
     h::Vector{Float64} = halfspace.a
     f::Float64 = halfspace.b 
-    d = c + h
+    #d = c + h
     #d::Vector{Float64} = c.*h
-    #l::Float64 = abs(f - dot(c, h))#sum(c.* h)
+    l::Float64 = abs(f - dot(c, h))#sum(c.* h)
     #l = abs(l)# < 0 ? -1 * l : l
     #t::Matrix{Float64} = h'
-    #r::Float64 = sum(abs.(G .* h))
-    return false#l <= r
-end
+    r::Float64 = sum(abs.(G .* h))
+    return l <= r#false
+
 
 function intersects(halfspace::HalfSpace, zonotope::Zonotope)
     intersects(zonotope, halfspace)

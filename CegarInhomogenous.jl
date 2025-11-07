@@ -33,14 +33,14 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
 
     let ϕ = exp(A * m)
         d = m
-        P = PCA_reduce(minkowski_sum(U, linear_map(ϕ, U)), k)
+        P = PCA_reduce(minkowski_sum(U, linear_map(ϕ, U)))
         while d < initialTimeStep
             inputDiscritezationDict[d] = P
             P = minkowski_sum(P, linear_map(ϕ, P))
             ϕ = ϕ * ϕ
             d = d * 2
         end
-        inputDiscritezationDict[initialTimeStep] = PCA_reduce(P, k)
+        inputDiscritezationDict[initialTimeStep] = PCA_reduce(P)
     end
 
 
@@ -58,17 +58,17 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     sizehint!(S, size(V, 1))
     push!(S, V[1])
     for id in 2:size(V, 1)
-        push!(S, PCA_reduce(minkowski_sum(S[id - 1], V[id]), k))
+        push!(S, PCA_reduce(minkowski_sum(S[id - 1], V[id])))
         #push!(S, minkowski_sum(S[id - 1], V[id]))
 
     end
 
     newR = nothing
     i = 1
-    for i in eachindex(S)
+    #=for i in eachindex(S)
         @printf "volume of S[%d]: %.12f\n" i area(S[i])
         #println("volume of V[",i,"]: ", area(V[i]))
-    end
+    end=#
 
     while time < endtime
         attempts = 1

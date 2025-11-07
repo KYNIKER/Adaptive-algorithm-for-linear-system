@@ -17,7 +17,9 @@ Keep different profiles dependt on amount of recent fails.
 Specifically 0-1, 2-3, 4-5, 6+
 """
 function reachSetsCegar(A, initialTimestep, interval, X0, constraint::HalfSpace, strategy::Int = 1, DIGITS = 4)
-    if strategy == 1
+    if strategy == 0
+        return strategy0(A, initialTimestep, interval, X0, constraint, DIGITS)
+    elseif strategy == 1
         return strategy1(A, initialTimestep, interval, X0, constraint, DIGITS)
     elseif strategy == 2
         return strategy2(A, initialTimestep, interval, X0, constraint, DIGITS)
@@ -26,8 +28,55 @@ function reachSetsCegar(A, initialTimestep, interval, X0, constraint::HalfSpace,
     elseif strategy == 4
         return strategy4(A, initialTimestep, interval, X0, constraint, DIGITS)
     else 
-        throw(DomainError(strategy, "argument must be 1, 2, 3 or 4"))
+        throw(DomainError(strategy, "argument must be 0, 1, 2, 3 or 4"))
     end
+end
+
+# Naive solution. Half timestep on fail and reset completely
+function strategy0(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
+    startTime = minimum(interval)
+    endTime = maximum(interval)
+    finishFlag = false
+    timestep = initialTimestep
+    ANorm = norm(A, Inf)
+    i = 1
+    # Run till finished, or fail
+    R = []
+    while !finishFlag
+        intersectFlag = false
+        newR, ϕ = initialStepNoInput(A, ANorm, timestep, X0)
+        # Update R to fit startTime
+        push!(R, forwardTimeNoInput(A, newR, startTime))
+
+        currentTime = startTime + timestep
+        while currentTime < endTime && intersectFlag == false
+            i = i + 1
+            newR = linear_map(ϕ, R[i-1])
+
+            if intersects(constraint, newR)
+                intersectFlag = true
+            else
+                push!(R, newR)
+                currentTime = currentTime + timestep
+            end
+        end
+        if intersectFlag
+            timestep = timestep / 2
+            R = [] # Reset timer
+            i = 1
+        else
+            finishFlag = true
+        end
+    end
+
+    # Set timestep recorder
+    amountOfPoints = length(R)
+
+    timestepRecorder = collect(Iterators.repeated(timestep, amountOfPoints))
+    attemptsRecorder = collect(Iterators.repeated(1, amountOfPoints))
+
+    # End of main loop
+    return (R, timestepRecorder, attemptsRecorder)
 end
 
 function strategy1(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
@@ -316,21 +365,21 @@ function strategy4(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
 end
 
 
-function reachSetsCegarInput(A, initialTimestep, interval, X0, constraint::HalfSpace, μ::Float64, strategy::Int = 1, DIGITS = 4)
+function reachSetsCegarInput(A, initialTimestep, interval, X0, constraint::HalfSpace, μ::Float64, strategy::Int = 1, DIGITS = 4, REUSE = false)
     if strategy == 1
-        return strategy1Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS)
+        return strategy1Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS, REUSE)
     elseif strategy == 2
-        return strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS)
+        return strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS, REUSE)
     elseif strategy == 3
-        return strategy3Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS)
+        return strategy3Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS, REUSE)
     elseif strategy == 4
-        return strategy4Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS)
+        return strategy4Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS, REUSE)
     else 
         throw(DomainError(strategy, "argument must be 1, 2, 3 or 4"))
     end
 end
 
-function strategy1Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS::Int)
+function strategy1Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS::Int, REUSE::Bool)
     ANorm = norm(A, Inf)
     R = []
     Ω = []
@@ -348,7 +397,7 @@ function strategy1Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
     timestepRecorder = []
     attemptsRecorder = []
 
-    S = nothing # This will always be updated later
+    S = REUSE ? Zonotope(zeros(dim(X0)), [zeros(dim(X0))]) : nothing # This will always be updated later
     V = nothing # This will always be updated later
     ϕ = nothing # This will always be updated later
     modelFails = false # Do this if we reach a constraint violation always
@@ -369,7 +418,9 @@ function strategy1Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
         newΩ = nothing # This will always be updated later
         prevTime = 0
 
-        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
+        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = REUSE ?
+            fitTimeStepInputReUse(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS) :
+            fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -395,9 +446,9 @@ function strategy1Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
     return (Ω, timestepRecorder, attemptsRecorder)
 end
 
-function strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS::Int)
+function strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS::Int, REUSE::Bool)
     ANorm = norm(A, Inf)
-    R = []
+    R = Zonotope[]
     Ω = []
     changedTimeStep = true # Keeps track of whether timestep has changed
 
@@ -406,16 +457,16 @@ function strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
     
     previousInputValuesDict = Dict()
 
-    time = minimum(interval)
+    time :: Float64 = minimum(interval) 
     endtime = maximum(interval)
 
     currentTimeStep = initialTimestep
     timestepRecorder = []
     attemptsRecorder = []
 
-    S = nothing # This will always be updated later
-    V = nothing # This will always be updated later
-    ϕ = nothing # This will always be updated later
+    S = REUSE ? Zonotope(zeros(dim(X0)), [zeros(dim(X0))]) : Zonotope(zeros(dim(X0)), [zeros(dim(X0))]) # This will always be updated later
+    V = S # This will always be updated later
+    ϕ = A # This will always be updated later
     modelFails = false # Do this if we reach a constraint violation always
     i = 1 # Enumerator
 
@@ -435,11 +486,13 @@ function strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
         end
 
         attempts = 1 # Keep track of number of attempts
-        newR = nothing # This will always be updated later
-        newΩ = nothing # This will always be updated later
+        newR = R # This will always be updated later
+        newΩ = S # This will always be updated later
         prevTime = 0
 
-        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
+        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = REUSE ?
+            fitTimeStepInputReUse(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS) : 
+            fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -500,7 +553,7 @@ function strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
     return (Ω, timestepRecorder, attemptsRecorder)
 end
 
-function strategy3Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS::Int)
+function strategy3Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS::Int, REUSE::Bool)
     ANorm = norm(A, Inf)
     R = []
     Ω = []
@@ -518,7 +571,7 @@ function strategy3Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
     timestepRecorder = []
     attemptsRecorder = []
 
-    S = nothing # This will always be updated later
+    S = REUSE ? Zonotope(zeros(dim(X0)), [zeros(dim(X0))]) : nothing # This will always be updated later
     V = nothing # This will always be updated later
     ϕ = nothing # This will always be updated later
     modelFails = false # Do this if we reach a constraint violation always
@@ -539,9 +592,10 @@ function strategy3Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
         attempts = 1 # Keep track of number of attempts
         newR = nothing # This will always be updated later
         newΩ = nothing # This will always be updated later
-        prevTime = 0
 
-        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
+        currentTimeStep, newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = REUSE ? 
+            fitTimeStepInputReUse(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS) : 
+            fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -575,7 +629,7 @@ function strategy3Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
     return (Ω, timestepRecorder, attemptsRecorder)
 end
 
-function strategy4Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS::Int)
+function strategy4Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS::Int, REUSE::Bool)
     ANorm = norm(A, Inf)
     R = []
     Ω = []
@@ -593,7 +647,7 @@ function strategy4Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
     timestepRecorder = []
     attemptsRecorder = []
 
-    S = nothing # This will always be updated later
+    S = REUSE ? Zonotope(zeros(dim(X0)), [zeros(dim(X0))]) : nothing # This will always be updated later
     V = nothing # This will always be updated later
     ϕ = nothing # This will always be updated later
     modelFails = false # Do this if we reach a constraint violation always
@@ -625,7 +679,9 @@ function strategy4Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
         newΩ = nothing # This will always be updated later
         prevTime = 0
 
-        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
+        currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = REUSE ? 
+            fitTimeStepInputReUse(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS) :
+            fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict, previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS)
 
         # Found a valid timestep
         push!(R, newR)
@@ -689,15 +745,15 @@ function fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict,
     approveFlag = false
     newR = nothing
     while !approveFlag
-        if currentTimeStep == 0
-            # We have a model fail
-            throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
-        elseif changedTimeStep
+        if changedTimeStep
             # We make sure to round the timestep
             currentTimeStep = round(currentTimeStep, digits=DIGITS)
-        end
 
-        if changedTimeStep
+            if currentTimeStep == 0
+                # We have a model fail
+                throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
+            end
+
             # Check if we have already calculated the initial step, else calculate it
             if !haskey(previouslyCalculatedDict, currentTimeStep)
                 previouslyCalculatedDict[currentTimeStep] = initialStepNoInput(A, ANorm, currentTimeStep, X0)
@@ -724,24 +780,26 @@ function fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict,
     return currentTimeStep, newR, ϕ, changedTimeStep, attempts
 end
 
-function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict,previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS::Int)
+function fitTimeStepInput(currentTimeStep :: Float64, changedTimeStep :: Bool, previouslyCalculatedDict :: Dict,previousInputValuesDict :: Dict, A :: Matrix{Float64}, ANorm :: Float64, X0 :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}}, R :: Vector{Zonotope}, ϕ :: Matrix{Float64}, attempts :: Integer, time :: Float64, i :: Integer, μ :: Float64, S :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}}, V :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}}, constraint :: HalfSpace, DIGITS::Int)
     approveFlag = false
-    newR = nothing # This will always be updated later
-    newS = nothing # This will always be updated later
-    newV = nothing # This will always be updated later
-    newΩ = nothing # This will always be updated later
+    newR = R # This will always be updated later
+    newS = S # This will always be updated later
+    newV = V # This will always be updated later
+    newΩ = S # This will always be updated later
     prevTime = 0
     while !approveFlag
-        if currentTimeStep == 0
-            # We have a model fail
-            throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
-        elseif changedTimeStep
+        if changedTimeStep
             # We make sure to round the timestep
             currentTimeStep = round(currentTimeStep, digits=DIGITS)
 
+            if currentTimeStep == 0
+                # We have a model fail
+                throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
+            end
+
             # We check if the new timestep respects the interval. Only do this if we have an input
             if mod(rationalize(time), rationalize(currentTimeStep)) != 0
-                println("Cannot use $currentTimeStep as timestep at time $time")
+                #println("Cannot use $currentTimeStep as timestep at time $time")
                 currentTimeStep = currentTimeStep/2
                 continue
             end
@@ -751,7 +809,7 @@ function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculated
             # Check if we have already calculated the initial step
             if haskey(previouslyCalculatedDict, currentTimeStep)
                 newR, ϕ = previouslyCalculatedDict[currentTimeStep]
-                S, V, prevTime = previousInputValuesDict[currentTimeStep]
+                S, V, prevTime :: Float64 = previousInputValuesDict[currentTimeStep]
             else
                 # We calculate and store it
                 newR, ballβ, ϕ = initialStep(A, ANorm, currentTimeStep, X0, μ)
@@ -762,7 +820,14 @@ function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculated
                 V = ballβ
             end
             # Forward in time
+            
+            #println("i: ", i)
+            #println("newR: ", typeof(newR))
+            #println("newS: ", typeof(newS))
+            #println("newV: ", typeof(newV))
+            #println("newΩ: ", typeof(newΩ))
             newR, newS, newV, newΩ = forwardTime(A, newR, time, currentTimeStep, ϕ, prevTime, S, V)
+        
             previousInputValuesDict[currentTimeStep] = (newS, newV, time)
         
             changedTimeStep = false
@@ -774,6 +839,58 @@ function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculated
             newΩ = minkowski_sum(newR, newS)
             previousInputValuesDict[currentTimeStep] = (newS, newV, time)
 
+        end
+
+        # Check if we intersect with constraint
+        if !intersectss(newΩ.center, genmat(newΩ),constraint.a, constraint.b)
+            approveFlag = true
+        else # Reduce timestep
+            currentTimeStep = (currentTimeStep/2)
+            changedTimeStep = true
+            attempts = attempts + 1
+        end
+    end
+    return currentTimeStep, newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV
+end
+
+function fitTimeStepInputReUse(currentTimeStep, changedTimeStep, previouslyCalculatedDict,previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS::Int)
+    approveFlag = false
+    newR = nothing # This will always be updated later
+    newS = nothing # This will always be updated later
+    newV = nothing # This will always be updated later
+    newΩ = nothing # This will always be updated later
+    ballβ = nothing
+    while !approveFlag
+        if changedTimeStep
+            # We make sure to round the timestep
+            currentTimeStep = round(currentTimeStep, digits=DIGITS)
+
+            if currentTimeStep == 0
+                # We have a model fail
+                throw(AssertionError("Error model fails at time $time, constraint is not satisfied"))
+            end
+        end
+
+        if changedTimeStep
+            # Check if we have already calculated the initial step
+            if haskey(previouslyCalculatedDict, currentTimeStep)
+                newR, ϕ = previouslyCalculatedDict[currentTimeStep]
+                ballβ = previousInputValuesDict[currentTimeStep]
+            else
+                # We calculate and store it
+                newR, ballβ, ϕ = initialStep(A, ANorm, currentTimeStep, X0, μ)
+                previouslyCalculatedDict[currentTimeStep] = (newR, ϕ)
+                previousInputValuesDict[currentTimeStep] = ballβ
+            end
+            # Forward in time
+            newR, newS, newV, newΩ = forwardTimeReUse(A, newR, time, ϕ, ballβ, S)
+            changedTimeStep = false
+        else
+            # Do the next step
+            newR = linear_map(ϕ, R[i-1])
+            newS = minkowski_sum(S, V)
+            newV = linear_map(ϕ, V)
+            newΩ = minkowski_sum(newR, newS)
         end
 
         # Check if we intersect with constraint
