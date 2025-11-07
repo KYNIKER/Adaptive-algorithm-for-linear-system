@@ -1,4 +1,4 @@
-using LazySets, LinearAlgebra
+using LazySets, LinearAlgebra, Plots
 
 using Random # For strategy 4
 
@@ -36,19 +36,19 @@ function rectangleFromHBox2Dims(res::AbstractVector{Shape}, corners, dim1, dim2)
     end
 end
 
-function rectangleFromHBoxWithTimestepArray(res::AbstractVector{Shape}, cornerss, timesteps, startTime, dim)
+function rectangleFromHBoxWithTimestepArray(res::AbstractVector{Shape}, cornerss::Vector{Vector{Vector{Float64}}}, timesteps::Vector{Float64}, startTime, dim::Int64)
 
     currentTime = startTime
-    for i in 1:size(cornerss, 1)#
-        timestep = timesteps[i]
+    for i in 1:size(cornerss, 1)
+        timestep::Float64 = timesteps[i]::Float64
 
-        tope = getindex(cornerss, i)
-        dimCoords = getindex.(tope, dim)
-        maxcor = maximum(dimCoords)
-        mincor = minimum(dimCoords)
+        tope::Vector{Vector{Float64}} = getindex(cornerss, i)::Vector{Vector{Float64}}
+        dimCoords::Vector{Float64} = getindex.(tope, dim)
+        maxcor::Float64 = maximum(dimCoords)::Float64
+        mincor::Float64 = minimum(dimCoords)::Float64
         res[i] = Shape([currentTime, currentTime + timestep, currentTime + timestep, currentTime], [mincor, mincor, maxcor, maxcor])
         #res[i] = Shape([deltt*(i-1), deltt*i, deltt*i, deltt*(i-1)], [mincor, mincor, maxcor, maxcor])
-        currentTime = currentTime + timestep
+        currentTime::Float64 = currentTime + timestep::Float64
     end
     return res
 end
@@ -109,36 +109,58 @@ function reachsets(A, timestepsize, interval, X₀, μ, timescale)
     return R
 end
 
-function initialStep(A, ANorm, timestep, X₀, μ)
-    α = (exp(ANorm*timestep)-1-timestep*ANorm)/norm(X₀, Inf)
-    β = (exp(ANorm*timestep)-1)*μ/ANorm
+function initialStep(A::Matrix{Float64}, ANorm::Float64, timestep::Float64, X₀::Zonotope{Float64, Vector{Float64}, Matrix{Float64}}, μ::Float64)
+    
+    # Splitting this up so the compiler doesn't get confused
+    step1::Float64 = exp(ANorm * timestep)::Float64 - 1 - timestep * ANorm
+    step2::Float64 = manualNormInf(X₀)
+    α::Float64 = step1 / step2
+    #α = (exp(ANorm*timestep)-1-timestep*ANorm)/norm(X₀, Inf)
+    β::Float64 = (exp(ANorm*timestep)::Float64-1)*μ/ANorm
 
-    ϕ = exp(A*timestep)
+    ϕ = exp(A*timestep)::Matrix{Float64}
 
-    ϕp = (I+ϕ)/2
-    ϕm = (I-ϕ)/2
-    gens = hcat(ϕp*X₀.generators,ϕm*X₀.center, ϕm*X₀.generators)
+    ϕp::Matrix{Float64} = (I+ϕ)/2
+    ϕm::Matrix{Float64} = (I-ϕ)/2
+    gens = hcat(ϕp*X₀.generators,ϕm*X₀.center, ϕm*X₀.generators)::Matrix{Float64}
 
-
-    R = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), (α+β)*I(dim(X₀))))
+    R::Zonotope{Float64, Vector{Float64}, Matrix{Float64}} = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), (α+β)*I(dim(X₀))))
 
     ballβ = Zonotope(zeros(dim(X₀)), diagm(β*ones(dim(X₀))))
 
     return (R, ballβ, ϕ)
 end
 
-function initialStepNoInput(A, ANorm, timestep, X₀)
-    α = (exp(ANorm*timestep)-1-timestep*ANorm)/norm(X₀, Inf)
-    ϕ = exp(A*timestep)
+function manualNormInf(Z::Zonotope{Float64, Vector{Float64}, Matrix{Float64}})
+    dimensions = dim(Z)::Int64
+    maxVal::Float64 = Z.center[1] + sum(Z.generators[1])
+    for i in 2:dimensions
+        maxVal = max(maxVal, Z.center[i] + sum(Z.generators[i]))
+    end
 
-    ϕp = (I+ϕ)/2
-    ϕm = (I-ϕ)/2
-    gens = hcat(ϕp*X₀.generators,ϕm*X₀.center, ϕm*X₀.generators)
+    return maxVal
+end
 
 
-    R = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), α*I(dim(X₀))))
+function initialStepNoInput(A::Matrix{Float64}, Anorm::Float64, timestep::Float64, X₀::Zonotope{Float64, Vector{Float64}, Matrix{Float64}})
+    
+    # Splitting this up so the compiler doesn't get confused
+    step1 = exp(Anorm * timestep)::Float64 - 1 - timestep * Anorm
+    step2::Float64 = manualNormInf(X₀)
+    α = step1 / step2
+    
+    #α::Float64 = (exp(ANorm*timestep)-1-timestep*ANorm)/manualNormInf(X₀)::Float64
 
-    return (R, ϕ)
+    ϕ = exp(A*timestep)::Matrix{Float64}
+
+    ϕp::Matrix{Float64} = (I+ϕ)/2
+    ϕm::Matrix{Float64} = (I-ϕ)/2
+
+    gens = hcat(ϕp*X₀.generators,ϕm*X₀.center, ϕm*X₀.generators)::Matrix{Float64}
+
+    R::Zonotope{Float64, Vector{Float64}, Matrix{Float64}} = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), α*I(dim(X₀))))
+
+    return R, ϕ
 end
 
 

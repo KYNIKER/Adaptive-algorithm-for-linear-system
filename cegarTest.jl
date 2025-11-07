@@ -34,11 +34,11 @@ end
 
 
 ###
-#@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
-@profview boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
-#@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
+#@time boxes2, timesteps::Vector{Float64}, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
+@profview boxes2, timesteps::Vector{Float64}, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
+#@time boxes2, timesteps::Vector{Float64}, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
 
-corners2 = Vector(undef, size(boxes2, 1))
+corners2::Vector{Vector{Vector{Float64}}} = Vector(undef, size(boxes2, 1))
 
 @time begin
     for i in 1:(size(boxes2, 1))
