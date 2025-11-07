@@ -338,7 +338,7 @@ function intersects(zonotope::Zonotope, halfspace::HalfSpace) :: Bool
     #t::Matrix{Float64} = h'
     r::Float64 = sum(abs.(G .* h))
     return l <= r#false
-
+end
 
 function intersects(halfspace::HalfSpace, zonotope::Zonotope)
     intersects(zonotope, halfspace)
