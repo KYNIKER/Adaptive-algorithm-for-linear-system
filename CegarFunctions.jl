@@ -57,13 +57,17 @@ function strategy0(A, initialTimestep, interval, X0, constraint, DIGITS = 4)
                 intersectFlag = true
             else
                 push!(R, newR)
-                currentTime = currentTime + timestep
+                currentTime = round(currentTime + timestep, digits=DIGITS)
             end
         end
         if intersectFlag
-            timestep = timestep / 2
+            timestep = round(timestep / 2, digits=DIGITS)
             R = [] # Reset timer
             i = 1
+            if timeStep == 0
+                # We have a model fail
+                throw(AssertionError("Error model fails at time $currentTime, constraint is not satisfied"))
+            end
         else
             finishFlag = true
         end
