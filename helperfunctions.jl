@@ -127,7 +127,7 @@ function initialStep(A, ANorm, timestep, X₀, μ)
     return (R, ballβ, ϕ)
 end
 
-function initialStepNoInput(A, ANorm, timestep, X₀)
+function initialStepNoInput(A:: Matrix{Float64}, ANorm :: Float64, timestep :: Float64, X₀ :: Zonotope)
     α = (exp(ANorm*timestep)-1-timestep*ANorm)/norm(X₀, Inf)
     ϕ = exp(A*timestep)
 
@@ -136,7 +136,7 @@ function initialStepNoInput(A, ANorm, timestep, X₀)
     gens = hcat(ϕp*X₀.generators,ϕm*X₀.center, ϕm*X₀.generators)
 
 
-    R = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), α*I(dim(X₀))))
+    R :: Zonotope = minkowski_sum(Zonotope(ϕp*X₀.center, gens), Zonotope(zeros(dim(X₀)), α*I(dim(X₀))))
 
     return (Zonotope(R.center, R.generators), ϕ)
 end
@@ -315,9 +315,9 @@ function intersectss(c::Vector{Float64}, G::Matrix{Float64}, h::Vector{Float64},
     #c::Vector{Float64} = zonotope.center
     #G::Matrix{Float64} = genmat(zonotope)
     #println(h, reshape(halfspace.a, (1,:)))
-    l::Float64 = abs(f - dot(h, c))
-    r::Float64 = sum(abs.(G .* h))
-    return l <= r
+    #l::Float64 = abs(f - dot(h, c))
+    #r::Float64 = sum(abs.(G .* h))
+    return abs(f - dot(h, c)) <= mapreduce(abs, +, G .* h)#sum(abs.(G * h))
 end
 
 #=function intersects(zonotope::Zonotope, halfspace::HalfSpace)
@@ -348,14 +348,14 @@ function intersects(z1::Zonotope, z2::Zonotope) #Should be possible to compute t
     isdisjoint(z1, z2)
 end
 
-function intersectss(c::Vector{Float64}, G::Matrix{Float64}, h::Vector{Float64}, f::Float64) :: Bool
+#=function intersectss(c::Vector{Float64}, G::Matrix{Float64}, h::Vector{Float64}, f::Float64) :: Bool
     #c::Vector{Float64} = zonotope.center
     #G::Matrix{Float64} = genmat(zonotope)
     #println(h, reshape(halfspace.a, (1,:)))
     l::Float64 = abs(f - dot(h, c))
     r::Float64 = sum(abs.(G .* h))
     return l <= r
-end
+end=#
 
 function smallestDeterminant(A, timestepsizes)
     trace = tr(A)
