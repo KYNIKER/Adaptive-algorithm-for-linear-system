@@ -15,7 +15,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     ANorm = norm(A, Inf)
     initialTimeStepSize = initialTimeStep
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
-    R = []
+    R = Zonotope[]
     changedTimeStep = true
 
     discritezationDict = Dict()
@@ -63,7 +63,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
 
     end
 
-    newR = nothing
+    newR :: Zonotope = X0
     i = 1
     #=for i in eachindex(S)
         @printf "volume of S[%d]: %.12f\n" i area(S[i])
@@ -71,14 +71,18 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     end=#
 
     while time < endtime
+        if i% 100 == 0
+            println("Time at step $i: $time")
+        end
         attempts = 1
         approveFlag = false
 
         while !approveFlag
             if currentTimeStep < m
-                println(timeStepRecorder)
+                #println(R, timeStepRecorder)
+                println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
                 return (R, timeStepRecorder, attemptsRecorder)
-                throw(AssertionError("Error model fails at time $time, constraint is not satisfied after $attempts attempts"))
+                #throw(AssertionError("Error model fails at time $time, constraint is not satisfied after $attempts attempts"))
             end
 
             if changedTimeStep

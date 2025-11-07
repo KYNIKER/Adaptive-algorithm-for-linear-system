@@ -2,27 +2,35 @@
 using Plots, LazySets, LinearAlgebra
 include("helperfunctions.jl")
 include("models.jl")
-include("CegarFunctions.jl")
+#include("CegarFunctions.jl")
+include("CegarInhomogenous.jl")
 
-const μ = 0.01
+const μ = 0.0
 
-initialTimeStep = 0.4
+initialTimeStep = 0.64
 strategy = 2
-digits = 4
+Digits = 2
 reuse = true
 plotConstraint = true
 
-A, P₁, constraint, T, dimToPlot = loadHeat01()
+A, P₁, constraint, T, dimToPlot = loadHeat02()
 
-T = [0, 8]
+T = [0, 40]
+
+ANorm = norm(A, Inf)
+m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+β = (exp(ANorm*(m))-1)*μ/ANorm
+#println("original area ballβ: ", area(Zonotope(zeros(dim(P₁)), ((exp(ANorm*(initialTimeStep))-1)*μ/ANorm)*I(dim(P₁)))))
+ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
+
 
 ###
 #@profview boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
 
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
-@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
+@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+#@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
 #@profview boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
-
 
 corners2 = Vector(undef, size(boxes2, 1))
 
