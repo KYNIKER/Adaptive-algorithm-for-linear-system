@@ -7,13 +7,13 @@ include("CegarFunctions.jl")
 const UseCrane = true # Crane usually has T = 15
 const μ = 0.01
 
-Tstart = 0
+Tstart = 0.0
 T = 4
 initialTimeStep = 0.4
-strategy = 3
+strategy = 2
 dimToPlot = 2
 digits = 4
-reuse = true
+reuse = false
 
 # const tΔ = 0.01
 # const r = 1.2
@@ -34,7 +34,8 @@ end
 
 
 ###
-@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
+#@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
+@profview boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
 
 corners2 = Vector(undef, size(boxes2, 1))

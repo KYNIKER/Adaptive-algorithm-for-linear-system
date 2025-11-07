@@ -452,7 +452,7 @@ end
 
 function strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS::Int, REUSE::Bool)
     ANorm = norm(A, Inf)
-    R = []
+    R = Zonotope[]
     Ω = []
     changedTimeStep = true # Keeps track of whether timestep has changed
 
@@ -461,16 +461,16 @@ function strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
     
     previousInputValuesDict = Dict()
 
-    time = minimum(interval)
+    time :: Float64 = minimum(interval) 
     endtime = maximum(interval)
 
     currentTimeStep = initialTimestep
     timestepRecorder = []
     attemptsRecorder = []
 
-    S = REUSE ? Zonotope(zeros(dim(X0)), [zeros(dim(X0))]) : nothing # This will always be updated later
-    V = nothing # This will always be updated later
-    ϕ = nothing # This will always be updated later
+    S = REUSE ? Zonotope(zeros(dim(X0)), [zeros(dim(X0))]) : Zonotope(zeros(dim(X0)), [zeros(dim(X0))]) # This will always be updated later
+    V = S # This will always be updated later
+    ϕ = A # This will always be updated later
     modelFails = false # Do this if we reach a constraint violation always
     i = 1 # Enumerator
 
@@ -490,8 +490,8 @@ function strategy2Input(A, initialTimestep, interval, X0, constraint, μ, DIGITS
         end
 
         attempts = 1 # Keep track of number of attempts
-        newR = nothing # This will always be updated later
-        newΩ = nothing # This will always be updated later
+        newR = R # This will always be updated later
+        newΩ = S # This will always be updated later
         prevTime = 0
 
         currentTimeStep,  newR, newΩ, ϕ, changedTimeStep, attempts, newS, newV = REUSE ?
@@ -784,12 +784,12 @@ function fitTimeStep(currentTimeStep, changedTimeStep, previouslyCalculatedDict,
     return currentTimeStep, newR, ϕ, changedTimeStep, attempts
 end
 
-function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculatedDict,previousInputValuesDict, A, ANorm, X0, R, ϕ, attempts, time, i,μ, S, V, constraint, DIGITS::Int)
+function fitTimeStepInput(currentTimeStep :: Float64, changedTimeStep :: Bool, previouslyCalculatedDict :: Dict,previousInputValuesDict :: Dict, A :: Matrix{Float64}, ANorm :: Float64, X0 :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}}, R :: Vector{Zonotope}, ϕ :: Matrix{Float64}, attempts :: Integer, time :: Float64, i :: Integer, μ :: Float64, S :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}}, V :: Zonotope{Float64, Vector{Float64}, Matrix{Float64}}, constraint :: HalfSpace, DIGITS::Int)
     approveFlag = false
-    newR = nothing # This will always be updated later
-    newS = nothing # This will always be updated later
-    newV = nothing # This will always be updated later
-    newΩ = nothing # This will always be updated later
+    newR = R # This will always be updated later
+    newS = S # This will always be updated later
+    newV = V # This will always be updated later
+    newΩ = S # This will always be updated later
     prevTime = 0
     while !approveFlag
         if changedTimeStep
@@ -813,7 +813,7 @@ function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculated
             # Check if we have already calculated the initial step
             if haskey(previouslyCalculatedDict, currentTimeStep)
                 newR, ϕ = previouslyCalculatedDict[currentTimeStep]
-                S, V, prevTime = previousInputValuesDict[currentTimeStep]
+                S, V, prevTime :: Float64 = previousInputValuesDict[currentTimeStep]
             else
                 # We calculate and store it
                 newR, ballβ, ϕ = initialStep(A, ANorm, currentTimeStep, X0, μ)
@@ -824,7 +824,14 @@ function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculated
                 V = ballβ
             end
             # Forward in time
+            
+            #println("i: ", i)
+            #println("newR: ", typeof(newR))
+            #println("newS: ", typeof(newS))
+            #println("newV: ", typeof(newV))
+            #println("newΩ: ", typeof(newΩ))
             newR, newS, newV, newΩ = forwardTime(A, newR, time, currentTimeStep, ϕ, prevTime, S, V)
+        
             previousInputValuesDict[currentTimeStep] = (newS, newV, time)
         
             changedTimeStep = false
@@ -839,7 +846,7 @@ function fitTimeStepInput(currentTimeStep, changedTimeStep, previouslyCalculated
         end
 
         # Check if we intersect with constraint
-        if !intersects(constraint, newΩ)
+        if !intersectss(newΩ.center, genmat(newΩ),constraint.a, constraint.b)
             approveFlag = true
         else # Reduce timestep
             currentTimeStep = (currentTimeStep/2)
