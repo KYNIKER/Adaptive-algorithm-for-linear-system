@@ -43,9 +43,10 @@ ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
 #using ProfileCanvas
 #ProfileCanvas.@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
 #@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 2)
-@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+t = @elapsed boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+println(t)
 
-#@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, [Tstart, T], P₁, ballβ, constraint, 1)
+@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, [Tstart, T], P₁, constraint, strategy, 2)
 

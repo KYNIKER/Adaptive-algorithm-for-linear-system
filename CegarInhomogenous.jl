@@ -22,8 +22,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     R = Zonotope[]
     changedTimeStep = true
 
-    discritezationDict = Dict()
-    inputDiscritezationDict = Dict()
+    discritezationDict = Dict{Float64, Tuple{Zonotope, Matrix{Float64}}}()
+    inputDiscritezationDict = Dict{Float64, Zonotope}()
 
     time = minimum(interval)
     endtime = maximum(interval)
@@ -36,6 +36,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     k = size(U.generators, 2)
 
     let ϕ :: Matrix{Float64} = exp(A * m)
+        tempM = similar(ϕ)
         d = m
         P = PCA_reduce(minkowski_sum(U, linear_map(ϕ, U)))
         #disc :: Zonotope = X0
@@ -52,7 +53,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
             disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
             discritezationDict[d] = (disc, ϕ)
 
-            ϕ = ϕ * ϕ
+            mul!(tempM, ϕ , ϕ)
+            copy!(ϕ, tempM)
             d = d * 2
 
             #=
@@ -71,12 +73,12 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
 
         end
         α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
-        ϕp = (I+ϕ)/2
-        ϕm = (I-ϕ)/2
-        gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG)
+        ϕp = (dia+ϕ)/2
+        ϕm = (dia-ϕ)/2
+        gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
 
-        disc :: Zonotope = minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*diagm(ones(XDim))))
-        discritezationDict[d] = (disc, ϕ)
+            disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
+            discritezationDict[d] = (disc, ϕ)
         inputDiscritezationDict[initialTimeStep] = PCA_reduce(P)
     end
 
@@ -84,7 +86,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     V = Vector{Zonotope}()
     sizehint!(V, ceil(Integer, endtime / initialTimeStep) + 1)
     push!(V, inputDiscritezationDict[initialTimeStep])
-    let ϕ = exp(A * initialTimeStep)
+    let (_, ϕ) = discritezationDict[initialTimeStep]
         for id in 2:(ceil(Integer, endtime / initialTimeStep) + 1)
             #push!(V, linear_map(ϕ, V[id - 1]))
             t :: Zonotope = linear_map(ϕ, V[id - 1])#Zonotope(ϕ * V[id - 1].center, ϕ * V[id - 1].generators)
@@ -111,6 +113,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
     end=#
 
     Φ :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
+    tempM = similar(Φ)
+    tempXG = similar(XG .* h)
     #ϕT :: Matrix{Float64} = Φ
 
     while time < endtime
@@ -148,10 +152,11 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
             #newR = linear_map(ϕt, newR)
 
             msum::Zonotope = linear_map(ϕt, newR) #minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / initialTimeStep)])
-            if !intersectss(msum.center, genmat(msum), h, f)
+            if !intersectss(msum.center, genmat(msum), h, f, tempXG)
                 approveFlag = true
                 newR = msum
-                Φ = Φ * ϕt
+                mul!(tempM, Φ, ϕt)
+                copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
             else 
                 currentTimeStep = currentTimeStep / 2 
                 changedTimeStep = true

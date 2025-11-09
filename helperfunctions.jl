@@ -311,13 +311,14 @@ end
 
 #intersects function is based upon "Set operations and order reductions for constrained zonotopes" - Vignesh Raghuraman, Justin P. Koeln
 #Note that this only returns true if they intersect and does not depend on whether the intersection between them is empty.
-function intersectss(c::Vector{Float64}, G::Matrix{Float64}, h::Vector{Float64}, f::Float64) :: Bool
+function intersectss(c::Vector{Float64}, G::Matrix{Float64}, h::Vector{Float64}, f::Float64, tempM :: Matrix{Float64}) :: Bool #Kan måske speedes op ved at give et ekstra argument tempM som bliver brugt til at udregne højresiden så at vi ikke altid assigner memory til den operation.
     #c::Vector{Float64} = zonotope.center
     #G::Matrix{Float64} = genmat(zonotope)
     #println(h, reshape(halfspace.a, (1,:)))
     #l::Float64 = abs(f - dot(h, c))
     #r::Float64 = sum(abs.(G .* h))
-    return abs(f - dot(h, c)) <= mapreduce(abs, +, G .* h)#sum(abs.(G * h))
+    #mul!(tempM, G, h)
+    return abs(f - dot(h, c)) <= sum(abs.(G .* h))#mapreduce(abs, +, G .* h)#sum(abs.(G * h))
 end
 
 #=function intersects(zonotope::Zonotope, halfspace::HalfSpace)
