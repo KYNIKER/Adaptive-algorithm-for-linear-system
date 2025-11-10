@@ -337,7 +337,8 @@ function intersects(zonotope::Zonotope, halfspace::HalfSpace) :: Bool
     l::Float64 = abs(f - dot(c, h))#sum(c.* h)
     #l = abs(l)# < 0 ? -1 * l : l
     #t::Matrix{Float64} = h'
-    r::Float64 = sum(abs.(G .* h))
+    #mul!(tempM, h', G)
+    r::Float64 = abs_sum(h, G)
     return l <= r#false
 end
 
@@ -363,3 +364,9 @@ function smallestDeterminant(A, timestepsizes)
     return timestepsizes[argmin(map(exp, timestepsizes * trace))]
 end
 
+
+function linear_map_zonotope_nD(M::AbstractMatrix, c::Vector{Float64}, G::Matrix{Float64})
+    #c = M * LazySets.center(Z)
+    #gi = M * genmat(Z)
+    return Zonotope(M * c, M * G)
+end

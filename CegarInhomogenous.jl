@@ -105,7 +105,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
 
     end
 
-    newR :: Zonotope = X0
+    newR :: Zonotope, _ = discritezationDict[initialTimeStep]
     i = 1
     #=for i in eachindex(S)
         @printf "volume of S[%d]: %.12f\n" i area(S[i])
@@ -114,7 +114,9 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
 
     Φ :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
     tempM = similar(Φ)
-    tempXG = similar(XG .* h)
+    tempXG = Matrix{Float64}(undef, 1, 150)
+    RG = similar(genmat(newR))
+    RC = similar(newR.center)
     #ϕT :: Matrix{Float64} = Φ
 
     while time < endtime
@@ -150,9 +152,10 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope, U::Zonotop
                 newR = R[i - 1]
             end
             #newR = linear_map(ϕt, newR)
-
-            msum::Zonotope = linear_map(ϕt, newR) #minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / initialTimeStep)])
-            if !intersectss(msum.center, genmat(msum), h, f, tempXG)
+            RC = newR.center
+            RG = genmat(newR)
+            msum::Zonotope = linear_map_zonotope_nD(ϕt, RC, RG) #minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / initialTimeStep)])
+            if !intersects(msum, constraint)#intersectss(msum.center, genmat(msum), h, f, tempXG)
                 approveFlag = true
                 newR = msum
                 mul!(tempM, Φ, ϕt)
