@@ -365,7 +365,7 @@ function smallestDeterminant(A, timestepsizes)
 end
 
 
-function linear_map_zonotope_nD(M::AbstractMatrix, c::Vector{Float64}, G::Matrix{Float64}, tempc::Vector{Float64}, tempG::Matrix{Float64})
+function linear_map_zonotope_nD(M::AbstractMatrix, c::Vector{Float64}, G::Matrix{Float64}, tempG::Matrix{Float64})
     #c = M * LazySets.center(Z)
     #gi = M * genmat(Z)
     c = M * c
