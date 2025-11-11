@@ -10,10 +10,10 @@ const μ = 0.00
 
 Tstart = 0.0
 T = 4.
-initialTimeStep = 0.2
+initialTimeStep = 0.02
 strategy = 2
 dimToPlot = 2
-Digits = 2
+Digits = 4
 reuse = false
 plotConstraint = true
 
