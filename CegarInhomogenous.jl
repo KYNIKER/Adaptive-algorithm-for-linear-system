@@ -327,6 +327,5 @@ end
 function smallStep(newR, ϕt) :: Zonotope
     RC = newR.center
     RG = genmat(newR)
-    tempG = copy(RG)
-    return linear_map_zonotope_nD(ϕt, RC, RG, tempG)
+    return linear_map_zonotope_nD(ϕt, RC, RG)
 end
