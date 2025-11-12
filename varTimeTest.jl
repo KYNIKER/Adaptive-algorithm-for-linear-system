@@ -34,7 +34,7 @@ end
 @time boxes2 = reachSetsForTimesteps(A, timesteps, [0, T], P₁, μ)
 
 
-corners2 = Vector(undef, size(boxes2, 1))
+corners2::Vector{Vector{Vector{Float64}}} = Vector(undef, size(boxes2, 1))
 
 @time begin
     for i in 1:(size(boxes2, 1))

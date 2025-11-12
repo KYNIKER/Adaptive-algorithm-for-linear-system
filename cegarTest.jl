@@ -51,7 +51,7 @@ println(t)
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, [Tstart, T], P₁, constraint, strategy, 2)
 
 
-corners2 = Vector(undef, size(boxes2, 1))
+corners2::Vector{Vector{Vector{Float64}}} = Vector(undef, size(boxes2, 1))
 
 @time begin
     for i in 1:(size(boxes2, 1))
