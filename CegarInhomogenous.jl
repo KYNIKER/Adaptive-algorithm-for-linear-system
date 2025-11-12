@@ -106,6 +106,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     RC = similar(newR.center)
     #ϕT :: Matrix{Float64} = Φ
     newRR = copy(newR)
+    einmal :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
     while time < endtime
 
         attempts = 1
@@ -123,10 +124,11 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
                 linear_map!(newRR, Φ, newR)
             else 
                 newR, ϕt = discritezationDict[currentTimeStep]
-                newRR = copy(R[i - 1])
+                newRR = R[i - 1]#linear_map!(newRR, einmal, R[i-1])#newRR = copy(R[i - 1])
             end
             if !changedTimeStep
-                msum = smallStep(newRR, ϕt)
+
+                msum = linear_map(ϕt, newRR) #smallStep(newRR, ϕt, RC, RG)
             else
                 msum = newRR
             end
@@ -134,17 +136,18 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             
             if !intersects(msum, constraint) #intersectss(msum.center, genmat(msum), h, f, tempXG)
                 approveFlag = true
-                newR = copy(msum)
+                push!(R, msum)
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
             else 
+                R[i - 1] = copy(R[i - 1])
                 currentTimeStep = currentTimeStep / 2 
                 changedTimeStep = true
                 attempts = attempts + 1
             end
         end
 
-        push!(R, newR)
+        #push!(R, msum)
     
         push!(timeStepRecorder, currentTimeStep)
         push!(attemptsRecorder, attempts)
@@ -161,7 +164,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     return (R, timeStepRecorder, attemptsRecorder)
 end
 
-function cegarInputSystemPreAlloc(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint::HalfSpace, Digits :: Integer) where {N}
+#=function cegarInputSystemPreAlloc(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint::HalfSpace, Digits :: Integer) where {N}
     h::Vector{Float64} = constraint.a
     f::Float64 = constraint.b 
     ANorm = norm(A, Inf)
@@ -310,10 +313,10 @@ function cegarInputSystemPreAlloc(A, initialTimeStep, interval, X0::Zonotope{N,V
     end
 
     return (R, timeStepRecorder, attemptsRecorder)
-end
+end=#
 
-function smallStep(newR, ϕt) :: Zonotope
+function smallStep(newR, ϕt, RC, RG) :: Zonotope
     RC = newR.center
-    RG = genmat(newR)
-    return linear_map_zonotope_nD(ϕt, RC, RG)
+    RG = ϕt * genmat(newR)
+    return Zonotope(ϕt * RC, RG)#
 end
