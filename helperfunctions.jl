@@ -36,7 +36,7 @@ function rectangleFromHBox2Dims(res::AbstractVector{Shape}, corners, dim1, dim2)
     end
 end
 
-function rectangleFromHBoxWithTimestepArray(res::AbstractVector{Shape}, cornerss::Vector{Vector{Vector{Float64}}}, timesteps::Vector{Float64}, startTime, dim::Int64)
+function rectangleFromHBoxWithTimestepArray(res::AbstractVector{Shape}, cornerss, timesteps::Vector{Float64}, startTime, dim::Int64)
 
     currentTime = startTime
     for i in 1:size(cornerss, 1)

@@ -14,10 +14,10 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     f::Float64 = constraint.b 
     ANorm = norm(A, Inf)
     XNorm = norm(X0, Inf)
-    XG = genmat(X0)
+    XG = copy(genmat(X0))
     XDim, p = size(XG)
-    XC = X0.center
-    initialTimeStepSize = initialTimeStep
+    XC = copy(X0.center)
+    initialTimeStep
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     R = Zonotope[]
     changedTimeStep = true
@@ -33,12 +33,12 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     attemptsRecorder = Integer[]
 
     k = size(U.generators, 2)
-
+    
     let ϕ :: Matrix{Float64} = exp(A * m)
         tempM = similar(ϕ)
         d = m
         P = PCA_reduce(minkowski_sum(U, linear_map(ϕ, U)))
-        disc :: Zonotope = X0
+        disc :: Zonotope = copy(X0)
         dia :: Matrix{Float64} = diagm(ones(XDim))
 
         while d < initialTimeStep
@@ -51,7 +51,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
 
             disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
-            discritezationDict[d] = (disc, ϕ)
+            discritezationDict[d] = (copy(disc), copy(ϕ))
 
             mul!(tempM, ϕ , ϕ)
             copy!(ϕ, tempM)
@@ -64,7 +64,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
         gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
 
         disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
-        discritezationDict[d] = (disc, ϕ)
+        discritezationDict[d] = (copy(disc), copy(ϕ))
         inputDiscritezationDict[initialTimeStep] = PCA_reduce(P)
     end
 
@@ -107,46 +107,34 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     #ϕT :: Matrix{Float64} = Φ
     newRR = copy(newR)
     while time < endtime
-        #=if i% 100 == 0
-            println("Time at step $i: $time")
-        end=#
+
         attempts = 1
+        
         approveFlag = false
 
         while !approveFlag
             if currentTimeStep < m
-                #println(R, timeStepRecorder)
                 println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
                 return (R, timeStepRecorder, attemptsRecorder)
-                #throw(AssertionError("Error model fails at time $time, constraint is not satisfied after $attempts attempts"))
             end
 
             if changedTimeStep
-                #=if haskey(discritezationDict, currentTimeStep)
-                    newR, ϕt = discritezationDict[currentTimeStep]
-                else 
-                    newR, ϕt = initialStepNoInput(A, ANorm, currentTimeStep, X0)
-                    discritezationDict[currentTimeStep] = (newR, ϕt)
-                end=#
                 newR, ϕt = discritezationDict[currentTimeStep]
-
-                #ϕT = Φ * ϕt
                 linear_map!(newRR, Φ, newR)
-                
-                changedTimeStep = false
             else 
-                _, ϕt = discritezationDict[currentTimeStep]
-                newRR = R[i - 1]
+                newR, ϕt = discritezationDict[currentTimeStep]
+                newRR = copy(R[i - 1])
             end
-            #newR = linear_map(ϕt, newR)
-            #RC = newR.center
-            #RG = genmat(newR)
-            #msum::Zonotope = linear_map_zonotope_nD(ϕt, RC, RG) #minkowski_sum(newR, S[ceil(Integer, (time + currentTimeStep) / initialTimeStep)])
-            #Vender halfspace forkert?
-            msum = smallStep(newRR, ϕt)
+            if !changedTimeStep
+                msum = smallStep(newRR, ϕt)
+            else
+                msum = newRR
+            end
+            changedTimeStep = false
+            
             if !intersects(msum, constraint) #intersectss(msum.center, genmat(msum), h, f, tempXG)
                 approveFlag = true
-                newR = msum
+                newR = copy(msum)
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
             else 
@@ -161,13 +149,13 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
         push!(timeStepRecorder, currentTimeStep)
         push!(attemptsRecorder, attempts)
         i = i + 1
-        time = round(time + currentTimeStep, digits=Digits)
-
+        time = time + currentTimeStep
+        #currentTimeStep = timeStepRecorder[end]
         # Reset / apply strategy
-        if currentTimeStep < initialTimeStepSize
+        #=if currentTimeStep < initialTimeStepSize
             currentTimeStep = currentTimeStep * 2
             changedTimeStep = true
-        end
+        end=#
     end
 
     return (R, timeStepRecorder, attemptsRecorder)

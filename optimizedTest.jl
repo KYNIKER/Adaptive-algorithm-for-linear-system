@@ -7,13 +7,13 @@ include("CegarInhomogenous.jl")
 
 const μ = 0.0
 
-initialTimeStep = 0.64
+initialTimeStep = 0.1
 strategy = 2
 Digits = 2
 reuse = true
 plotConstraint = true
 
-A, P₁, constraint, T, dimToPlot = loadHeat02()
+A, P₁, constraint, T, dimToPlot = loadHeat01()
 
 T = [0, 40]
 
@@ -28,6 +28,7 @@ ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
 #@profview boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
 
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
+println("initialTimeStep: ", initialTimeStep)
 @time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
 #@profview boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
