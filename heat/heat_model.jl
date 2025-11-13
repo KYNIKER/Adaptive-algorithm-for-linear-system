@@ -1,10 +1,3 @@
-# ==================================
-# Heat
-#
-# system type: continuous LTI system
-# state dimension: 200
-# input dimension: 1
-# ==================================
 using ReachabilityBenchmarks, MathematicalSystems, LazySets, MAT, SparseArraysfunction
 
 function heat_model()
