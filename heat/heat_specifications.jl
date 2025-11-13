@@ -11,8 +11,5 @@ function heat_specification()
     # time horizon: 20 time units
     time_horizon = 20.0
 
-    # specification
-    
-
     return X0, time_horizon, property
 end
