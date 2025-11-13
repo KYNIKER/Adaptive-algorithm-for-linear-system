@@ -1,4 +1,4 @@
-using LazySets, LinearAlgebra, Printf
+using LazySets, LinearAlgebra, Printf, FastExpm
 
 include("helperfunctions.jl")
 include("reductionMethods.jl")
@@ -34,7 +34,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
 
     k = size(U.generators, 2)
     
-    let ϕ :: Matrix{Float64} = exp(A * m)
+    let ϕ :: Matrix{Float64} = fastExpm(A * m)
         tempM = similar(ϕ)
         d = m
         P = PCA_reduce(minkowski_sum(U, linear_map(ϕ, U)))
@@ -43,7 +43,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
 
         while d < initialTimeStep
             inputDiscritezationDict[d] = P
-            P = minkowski_sum(P, linear_map(ϕ, P))
+            P = PCA_reduce(minkowski_sum(P, linear_map(ϕ, P)))
             
             α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
             ϕp = (dia+ϕ)/2
@@ -68,30 +68,32 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
         inputDiscritezationDict[initialTimeStep] = PCA_reduce(P)
     end
 
+    println("Dicts done!")
+
     STEPS = ceil(Integer, endtime / initialTimeStep) + 1
     V = Vector{Zonotope{N,Vector{N},Matrix{N}}}()
     sizehint!(V, STEPS)
 
     push!(V, inputDiscritezationDict[initialTimeStep])
-    let (_, ϕ) = discritezationDict[initialTimeStep]
+    #=let (_, ϕ) = discritezationDict[initialTimeStep]
         for id in 2:STEPS
             t :: Zonotope = linear_map(ϕ, V[id - 1])#Zonotope(ϕ * V[id - 1].center, ϕ * V[id - 1].generators)
             push!(V, t)
         end
-    end
-
+    end=#
+    println("V done!")
 
 
 
     S = Vector{Zonotope}()
     sizehint!(S, size(V, 1))
     push!(S, V[1])
-    for id in 2:size(V, 1)
+    #=for id in 2:size(V, 1)
         t = PCA_reduce(minkowski_sum(S[id - 1], V[id]))
         push!(S, t)
         #push!(S, minkowski_sum(S[id - 1], V[id]))
-    end
-
+    end=#
+    println("S done!")
     newR :: Zonotope, _ = discritezationDict[initialTimeStep]
     i = 1
     #=for i in eachindex(S)
@@ -107,11 +109,19 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     #ϕT :: Matrix{Float64} = Φ
     newRR = copy(newR)
     einmal :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
+    (_, initialϕ) = discritezationDict[initialTimeStep]
     while time < endtime
 
         attempts = 1
         
         approveFlag = false
+
+        if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > size(S, 1)
+            v = linear_map(initialϕ, V[end])
+            push!(V, v)
+            s = PCA_reduce(minkowski_sum(S[end], v))
+            push!(S, s)
+        end
 
         while !approveFlag
             if currentTimeStep < m
@@ -124,23 +134,26 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
                 linear_map!(newRR, Φ, newR)
             else 
                 newR, ϕt = discritezationDict[currentTimeStep]
-                newRR = R[i - 1]#linear_map!(newRR, einmal, R[i-1])#newRR = copy(R[i - 1])
+                newRR = R[i - 1] #linear_map!(newRR, einmal, R[i-1])#newRR = copy(R[i - 1])
             end
             if !changedTimeStep
 
-                msum = linear_map(ϕt, newRR) #smallStep(newRR, ϕt, RC, RG)
+                msum = linear_map( ϕt, newRR) #smallStep(newRR, ϕt, RC, RG)
             else
                 msum = newRR
             end
             changedTimeStep = false
             
-            if !intersects(msum, constraint) #intersectss(msum.center, genmat(msum), h, f, tempXG)
+            nsum :: Zonotope = minkowski_sum(msum, S[end])
+            if !intersects(nsum, constraint) #intersectss(msum.center, genmat(msum), h, f, tempXG)
                 approveFlag = true
                 push!(R, msum)
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
             else 
-                R[i - 1] = copy(R[i - 1])
+                if i > 1
+                    R[i - 1] = copy(R[i - 1])
+                end
                 currentTimeStep = currentTimeStep / 2 
                 changedTimeStep = true
                 attempts = attempts + 1
@@ -316,7 +329,7 @@ end
 end=#
 
 function smallStep(newR, ϕt, RC, RG) :: Zonotope
-    RC = newR.center
-    RG = ϕt * genmat(newR)
-    return Zonotope(ϕt * RC, RG)#
+    copy!(RC, newR.center)
+    mul!(RG, ϕt, genmat(newR))
+    return Zonotope( ϕt * RC, RG)#
 end
