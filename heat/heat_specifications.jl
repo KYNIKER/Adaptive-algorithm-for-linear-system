@@ -1,4 +1,4 @@
-using LazySets, MathematicalPredicates, SparseArrays
+using LazySets, SparseArrays
 
 function heat_specification()
     # initial set: xᵢ ∈ [0.6, 0.625] for i ≤ 2 and xᵢ = 0 for i > 2

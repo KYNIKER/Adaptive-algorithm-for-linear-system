@@ -5,13 +5,13 @@
 # state dimension: 200
 # input dimension: 1
 # ==================================
-using ReachabilityBenchmarks, MathematicalSystems, LazySets, MAT, SparseArraysfunction
+using LazySets, MAT
 
 function heat_model()
-    file = matopen(@current_path "heat.mat")
+    file = matopen("heat/heat.mat")
 
     # system matrix
-    A = read(file, "A")
+    A = Matrix(read(file, "A"))
 
     # input matrix
     B = sparse([67], [1], [1.0], size(A, 1), 1)
