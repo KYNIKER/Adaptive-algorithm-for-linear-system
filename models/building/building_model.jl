@@ -1,7 +1,7 @@
 using LazySets, MAT
 
 function building_model()
-    file = matopen("building/building.mat")
+    file = matopen("models/building/building.mat")
 
     A = read(file, "A")
 

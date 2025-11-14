@@ -11,7 +11,7 @@ function load_heat_input()
     X0 = convert(Zonotope, X0)
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
     
-    InputZonotope :: Zonotope = box_approximation(B*U) # No way det her virker
+    InputZonotope :: Zonotope = box_approximation(B*U) 
 
     return A, InputZonotope, X0, T, constraint, dimToPlot
 end

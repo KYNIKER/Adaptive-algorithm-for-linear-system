@@ -8,7 +8,7 @@
 using LazySets, MAT
 
 function heat_model()
-    file = matopen("heat/heat.mat")
+    file = matopen("models/heat/heat.mat")
 
     # system matrix
     A = Matrix(read(file, "A"))
