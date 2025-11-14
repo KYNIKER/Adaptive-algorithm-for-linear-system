@@ -2,26 +2,30 @@
 using Plots, LazySets, LinearAlgebra
 include("helperfunctions.jl")
 include("models.jl")
+include("heat/heat_load.jl")
 #include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.0
 
-initialTimeStep = 0.1
+initialTimeStep = 0.2
 strategy = 2
-Digits = 2
+Digits = 4
 reuse = true
 plotConstraint = true
+input = false
 
-A, P₁, constraint, T, dimToPlot = loadHeat01()
+if input
+    A,  ballβ, P₁, T, constraint, dimToPlot = load_heat_input()
+else
+    A, P₁, constraint, T, dimToPlot = loadHeat01()
 
-T = [0, 40]
-
-ANorm = norm(A, Inf)
-m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
-β = (exp(ANorm*(m))-1)*μ/ANorm
-#println("original area ballβ: ", area(Zonotope(zeros(dim(P₁)), ((exp(ANorm*(initialTimeStep))-1)*μ/ANorm)*I(dim(P₁)))))
-ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
+    ANorm = norm(A, Inf)
+    m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+    β = (exp(ANorm*(m))-1)*μ/ANorm
+    #println("original area ballβ: ", area(Zonotope(zeros(dim(P₁)), ((exp(ANorm*(initialTimeStep))-1)*μ/ANorm)*I(dim(P₁)))))
+    ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
+end
 
 
 ###
@@ -31,7 +35,7 @@ ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
 println("initialTimeStep: ", initialTimeStep)
 @time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
-#@profview boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
+@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 
 corners2 = Vector(undef, size(boxes2, 1))
 
