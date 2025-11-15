@@ -23,7 +23,7 @@ function loadHeat01(;)
     T = [0, 40]
     dimToPlot = xc
 
-    return A, X0, constraint, T, dimToPlot
+    return A, X0, [constraint], T, dimToPlot
 end
 
 function loadHeat02(;)

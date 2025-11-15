@@ -9,39 +9,37 @@ Based on "Efficient Computation of Reachable Sets of Linear Time-Invariant Syste
 # System description
 Given a LTI system: x' = Ax + Bu(t)
 """
-function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint::HalfSpace, Digits :: Integer) where {N}
-    h::Vector{Float64} = constraint.a
-    f::Float64 = constraint.b 
+function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer) where {N}
     ANorm = norm(A, Inf)
     XNorm = norm(X0, Inf)
     XG = copy(genmat(X0))
     XDim, p = size(XG)
     XC = copy(X0.center)
-    initialTimeStep
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     R = Zonotope[]
     changedTimeStep = true
-
+    #println("m: ", m)
     discritezationDict = Dict{Float64, Tuple{Zonotope{N,Vector{N},Matrix{N}}, Matrix{Float64}}}()
     inputDiscritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
 
     time = minimum(interval)
     endtime = maximum(interval)
 
-    currentTimeStep = initialTimeStep
+    currentTimeStep = copy(initialTimeStep)
     timeStepRecorder = Float64[]
     attemptsRecorder = Integer[]
 
     k = size(U.generators, 2)
     
-    let ϕ :: Matrix{Float64} = fastExpm(A * m)
+    let ϕ :: Matrix{Float64} = fastExpm(A .* m; threshold=eps(Float64), nonzero_tol=eps(Float64))
         tempM = similar(ϕ)
         d = m
-        P = PCA_reduce(minkowski_sum(U, linear_map(ϕ, U)))
+        P = minkowski_sum(U, linear_map(ϕ, U))
         disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
         dia :: Matrix{Float64} = diagm(ones(XDim))
 
         while d < initialTimeStep
+            println("d: ", d)
             inputDiscritezationDict[d] = P
             P = PCA_reduce(minkowski_sum(P, linear_map(ϕ, P)))
             
@@ -65,6 +63,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
 
         disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
         discritezationDict[d] = (copy(disc), copy(ϕ))
+        #P = minkowski_sum(U, linear_map(ϕ, U))
         inputDiscritezationDict[initialTimeStep] = PCA_reduce(P)
     end
 
@@ -88,6 +87,9 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     newRR = copy(newR)
     einmal :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
     (_, initialϕ) = discritezationDict[initialTimeStep]
+
+    tubes = []
+
     while time < endtime
 
         attempts = 1
@@ -102,7 +104,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
         while !approveFlag
             if currentTimeStep < m
                 println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
-                return (R, timeStepRecorder, attemptsRecorder)
+                return (tubes, timeStepRecorder, attemptsRecorder)
             end
 
             if changedTimeStep
@@ -118,9 +120,10 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             changedTimeStep = false
             
             nsum :: Zonotope = minkowski_sum(newRR, S)
-            if !intersects(nsum, constraint) #intersectss(msum.center, genmat(msum), h, f, tempXG)
+            if mapreduce(c -> !intersects(nsum, c), &, constraint) #intersectss(msum.center, genmat(msum), h, f, tempXG)
                 approveFlag = true
-                push!(R, newRR)
+                push!(R, copy(newRR))
+                push!(tubes, copy(nsum))
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
             else 
@@ -147,7 +150,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
         end=#
     end
 
-    return (R, timeStepRecorder, attemptsRecorder)
+    return (tubes, timeStepRecorder, attemptsRecorder)
 end
 
 #=function cegarInputSystemPreAlloc(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint::HalfSpace, Digits :: Integer) where {N}

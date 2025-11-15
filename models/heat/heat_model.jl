@@ -11,7 +11,7 @@ function heat_model()
     file = matopen("models/heat/heat.mat")
 
     # system matrix
-    A = Matrix(read(file, "A"))
+    A = Matrix{Float64}(read(file, "A"))
 
     # input matrix
     B = sparse([67], [1], [1.0], size(A, 1), 1)
