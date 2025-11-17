@@ -9,6 +9,7 @@ include("models/building/building_load.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.01
+const STATEGY = 1
 
 initialTimeStep = 0.2
 strategy = 2

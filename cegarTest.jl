@@ -7,6 +7,7 @@ include("CegarInhomogenous.jl")
 
 const UseCrane = false # Crane usually has T = 15
 const μ = 0.00
+const STATEGY = 0
 
 Tstart = 0.0
 T = 4.

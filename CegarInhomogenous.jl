@@ -11,7 +11,7 @@ Given a LTI system: x' = Ax + Bu(t)
 """
 function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer) where {N}
     ANorm = norm(A, Inf)
-    XNorm = norm(X0, Inf)
+    XNorm = norm(X0, Inf)::Float64
     XG = copy(genmat(X0))
     XDim, p = size(XG)
     XC = copy(X0.center)
@@ -22,8 +22,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     discritezationDict = Dict{Float64, Tuple{Zonotope{N,Vector{N},Matrix{N}}, Matrix{Float64}}}()
     inputDiscritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
 
-    time = minimum(interval)
-    endtime = maximum(interval)
+    time::Float64 = minimum(interval)
+    endtime::Float64 = maximum(interval)
 
     currentTimeStep = copy(initialTimeStep)
     timeStepRecorder = Float64[]
@@ -43,10 +43,10 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             inputDiscritezationDict[d] = P
             P = PCA_reduce(minkowski_sum(P, linear_map(ϕ, P)))
             
-            α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
+            α::Float64 = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
             ϕp = (dia+ϕ)/2
             ϕm = (dia-ϕ)/2
-            gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
+            gens::Matrix{Float64} = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
 
             disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
             discritezationDict[d] = (copy(disc), copy(ϕ))
@@ -142,12 +142,28 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
         push!(attemptsRecorder, attempts)
         i = i + 1
         time = time + currentTimeStep
-        #currentTimeStep = timeStepRecorder[end]
+
         # Reset / apply strategy
-        #=if currentTimeStep < initialTimeStepSize
-            currentTimeStep = currentTimeStep * 2
-            changedTimeStep = true
-        end=#
+        # Only do this if the current timestep is less than the initial
+        if STRATEGY == 0
+            # Only reduce
+        elseif STRATEGY == 1 
+            # always try double
+            if currentTimeStep < initialTimeStep
+                currentTimeStep = currentTimeStep * 2
+                changedTimeStep = true
+            end
+        elseif STRATEGY == 2
+            # If attemptsrecorder past 4 are successes, double timestep
+            if currentTimeStep < initialTimeStep
+                lowest = min(4, i-1)
+                window = @view attemptsRecorder[i-lowest:i-1]   
+                if all(window .== 1)
+                    currentTimeStep = currentTimeStep * 2
+                    changedTimeStep = true
+                end
+            end
+        end 
     end
 
     return (tubes, timeStepRecorder, attemptsRecorder)
