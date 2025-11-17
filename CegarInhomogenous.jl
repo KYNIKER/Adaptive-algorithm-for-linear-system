@@ -153,6 +153,111 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     return (tubes, timeStepRecorder, attemptsRecorder)
 end
 
+
+function OneTimeStepSystem(A, timestep::Float64, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer) where {N}
+    ANorm = norm(A, Inf)
+    XNorm = norm(X0, Inf)::Float64
+    XG = copy(genmat(X0))
+    XDim, p = size(XG)
+    XC = copy(X0.center)
+    R = Zonotope[]
+    m = timestep / 2^(ceil(Integer, log2(timestep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    #println("m: ", m)
+
+    time::Float64 = minimum(interval)
+    endtime::Float64 = maximum(interval)
+
+    #finalDisc :: Zonotope{N,Vector{N},Matrix{N}} = nothing
+    disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
+    initialϕ= nothing
+
+    P = nothing
+
+    # Calculate based on the smallest number, for some digits
+    let ϕ :: Matrix{Float64} = fastExpm(A .* m; threshold=eps(Float64), nonzero_tol=eps(Float64))
+        tempM = similar(ϕ)
+        d = m
+        P = minkowski_sum(U, linear_map(ϕ, U))
+        # disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
+        dia :: Matrix{Float64} = diagm(ones(XDim))
+
+        while d < timestep
+            println("d: ", d)
+            P = PCA_reduce(minkowski_sum(P, linear_map(ϕ, P)))
+            mul!(tempM, ϕ , ϕ)
+            copy!(ϕ, tempM)
+            d = d * 2
+        end
+
+        α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
+        ϕp = (dia+ϕ)/2
+        ϕm = (dia-ϕ)/2
+        gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
+
+        disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
+        initialϕ = ϕ
+        #P = minkowski_sum(U, linear_map(ϕ, U))
+        P = PCA_reduce(P)
+    end
+
+    println("Dicts done!")
+
+    #STEPS = ceil(Integer, endtime / initialTimeStep) + 1
+    V :: Zonotope{N,Vector{N},Matrix{N}} = P
+
+    S ::Zonotope{N,Vector{N},Matrix{N}} = P
+    newR :: Zonotope{N,Vector{N},Matrix{N}} = disc
+    #i = 1
+
+
+    Φ :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
+    tempM = similar(Φ)
+    #ϕt = similar(Φ)
+    #tempXG = Matrix{Float64}(undef, 1, 150)
+    # RG = similar(genmat(newR))
+    # RC = similar(newR.center)
+    #ϕT :: Matrix{Float64} = Φ
+    #newRR = copy(newR)
+    einmal :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
+    #(_, initialϕ) = discritezationDict[initialTimeStep]
+
+
+    tubes = []
+
+    # Loop
+    while time < endtime
+        V = linear_map(initialϕ, V)            
+        S = PCA_reduce(minkowski_sum(S, V)) :: Zonotope{Float64,Vector{Float64},Matrix{Float64}}
+        
+
+        newR = linear_map(initialϕ, newR)#linear_map!(newRR, ϕt, R[i-1]) #smallStep(newRR, ϕt, RC, RG)
+            
+            
+        nsum :: Zonotope = minkowski_sum(newR, S)
+        if mapreduce(c -> !intersects(nsum, c), &, constraint) #intersectss(msum.center, genmat(msum), h, f, tempXG)
+            push!(R, copy(newR))
+            push!(tubes, copy(nsum))
+            mul!(tempM, Φ, initialϕ)
+            copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
+        else # If we hit a constraint, we fail
+            println("Error model fails at time $time, constraint is not satisfied with timestep $timestep")
+            amountOfElements = length(tubes)
+            timeStepRecorder = [timestep for i in 1:amountOfElements]
+            attemptsRecorder = [1 for i in 1:amountOfElements]
+            return (tubes, timeStepRecorder, attemptsRecorder)
+        end
+        
+        # Update counters
+        #i = i + 1
+        time = time + timestep
+    end
+
+    amountOfElements = length(tubes)
+    timeStepRecorder = [timestep for i in 1:amountOfElements]
+    attemptsRecorder = [1 for i in 1:amountOfElements]
+    return (tubes, timeStepRecorder, attemptsRecorder)
+end
+
 #=function cegarInputSystemPreAlloc(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint::HalfSpace, Digits :: Integer) where {N}
     h::Vector{Float64} = constraint.a
     f::Float64 = constraint.b 
