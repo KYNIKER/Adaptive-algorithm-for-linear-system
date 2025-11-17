@@ -14,7 +14,7 @@ function heat_model()
     A = Matrix{Float64}(read(file, "A"))
 
     # input matrix
-    B = sparse([67], [1], [1.0], size(A, 1), 1)
+    B = Matrix{Float64}(sparse([67], [1], [1.0], size(A, 1), 1))
 
     # input domain
     U = BallInf([0.0], 0.5)

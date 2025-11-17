@@ -1,4 +1,4 @@
-using LazySets, LinearAlgebra, Printf, FastExpm
+using LazySets, LinearAlgebra, Printf, FastExpm, Polyhedra#, CDDLib
 
 include("helperfunctions.jl")
 include("reductionMethods.jl")
@@ -19,8 +19,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     R = Zonotope[]
     changedTimeStep = true
     #println("m: ", m)
-    discritezationDict = Dict{Float64, Tuple{Zonotope{N,Vector{N},Matrix{N}}, Matrix{Float64}}}()
-    inputDiscritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
+    discritezationDict = Dict()#Dict{Float64, Tuple{Zonotope{N,Vector{N},Matrix{N}}, Matrix{Float64}}}()
+    inputDiscritezationDict = Dict()#Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
 
     time::Float64 = minimum(interval)
     endtime::Float64 = maximum(interval)
@@ -30,12 +30,16 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     attemptsRecorder = Integer[]
 
     k = size(U.generators, 2)
-    
+    STRATEGY = 0
+
     let ϕ :: Matrix{Float64} = fastExpm(A .* m; threshold=eps(Float64), nonzero_tol=eps(Float64))
         tempM = similar(ϕ)
         d = m
-        P = minkowski_sum(U, linear_map(ϕ, U))
-        disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
+        dU = box_approximation_symmetric(d * U)
+        #println(typeof(dU))
+        #println(typeof(E_ψ(U, d, A)))
+        P = minkowski_sum(dU, E_ψ(U, d, A))#minkowski_sum(U, linear_map(ϕ, U))
+        #disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
         dia :: Matrix{Float64} = diagm(ones(XDim))
 
         while d < initialTimeStep
@@ -43,12 +47,22 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             inputDiscritezationDict[d] = P
             P = PCA_reduce(minkowski_sum(P, linear_map(ϕ, P)))
             
-            α::Float64 = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
+            #=α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
             ϕp = (dia+ϕ)/2
             ϕm = (dia-ϕ)/2
             gens::Matrix{Float64} = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
 
             disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
+            =#
+            #disc = minkowski_sum(convex_hull(X0, ϕ * minkowski_sum(X0, box_approximation_symmetric(d * U))),minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+            println("lt")
+            rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+            println("rt")
+
+            #println(typeof(lt), " vs ", typeof(rt))
+            disc = overapproximate(CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
+            println("disc: ", d)
             discritezationDict[d] = (copy(disc), copy(ϕ))
 
             mul!(tempM, ϕ , ϕ)
@@ -56,12 +70,21 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             d = d * 2
         end
 
-        α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
+        #=α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
         ϕp = (dia+ϕ)/2
         ϕm = (dia-ϕ)/2
         gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
 
         disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
+        =#
+        lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+        println("lt")
+        rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+        println("rt")
+
+        #println(typeof(lt), " vs ", typeof(rt))
+        disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
+        println("disc: ", d)
         discritezationDict[d] = (copy(disc), copy(ϕ))
         #P = minkowski_sum(U, linear_map(ϕ, U))
         inputDiscritezationDict[initialTimeStep] = PCA_reduce(P)
@@ -109,7 +132,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
 
             if changedTimeStep
                 newR, ϕt = discritezationDict[currentTimeStep]
-                linear_map!(newRR, Φ, newR)
+                newRR = linear_map(Φ, newR)
                 #msum = newRR
             else 
                 #newR, ϕt = discritezationDict[currentTimeStep]
