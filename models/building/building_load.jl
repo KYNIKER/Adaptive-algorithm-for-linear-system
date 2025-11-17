@@ -1,7 +1,7 @@
-using Reachability
+using ReachabilityAnalysis
 
-include(@current_path "building_model.jl")
-include(@current_path "building_specifications.jl")
+include("./building_model.jl")
+include("./building_specifications.jl")
 
 function load_building()
     A, B, U = building_model()
