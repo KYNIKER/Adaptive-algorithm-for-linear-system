@@ -1,7 +1,7 @@
 using  ReachabilityAnalysis
 
-include(@current_path "pde_model.jl")
-include(@current_path "pde_specifications.jl")
+include("./pde_model.jl")
+include("./pde_specifications.jl")
 
 function load_heat_input()
     A, B, U = pde_model()

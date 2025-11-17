@@ -2,18 +2,20 @@
 using Plots, LazySets, LinearAlgebra
 include("helperfunctions.jl")
 include("models.jl")
-include("heat/heat_load.jl")
-#include("OldCegarFunctions.jl")
+include("models/heat/heat_load.jl")
+include("models/motor/motor_load.jl")
+include("models/building/building_load.jl")
+#include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
-const μ = 0.0
+const μ = 0.01
 
 initialTimeStep = 0.2
 strategy = 2
 Digits = 4
 reuse = true
 plotConstraint = true
-input = false
+input = true
 
 if input
     A,  ballβ, P₁, T, constraint, dimToPlot = load_heat_input()
