@@ -3,7 +3,7 @@ using Plots, LazySets, LinearAlgebra
 include("helperfunctions.jl")
 include("models.jl")
 include("heat/heat_load.jl")
-#include("CegarFunctions.jl")
+#include("OldCegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.0

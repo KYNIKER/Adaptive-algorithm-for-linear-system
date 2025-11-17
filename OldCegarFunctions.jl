@@ -1,3 +1,14 @@
+# ///////////////////////////////
+# ///////////////////////////////
+
+# NOTE THAT THIS FILE IS OUTDATED
+# The code works, but is not optimized
+# Instead use CegarInhomogenous.jl
+
+# ///////////////////////////////
+# ///////////////////////////////
+
+
 using LazySets, LinearAlgebra
 
 using Random # For strategy 4
