@@ -9,7 +9,7 @@ function pde_specification()
                         high=[zeros(64); fill(0.0015, 16); fill(-0.0015, 4)])
 
     # safety property: y ≤ 12 for linear combination y (defined in out.mat)
-    y = read(matopen(@current_path "out.mat"), "M")[1, :]
+    y = read(matopen("models/PDE/out.mat"), "M")[1, :]
     property = HalfSpace(y, 12.0)
 
     # time horizon: 20 time units
