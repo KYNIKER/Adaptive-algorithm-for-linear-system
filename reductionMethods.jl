@@ -1,12 +1,11 @@
 using LazySets, LinearAlgebra
 
-function PCA_reduce(Z) # Reduce to dim(Z) generators
-    G = genmat(Z) # Get generators
+function PCA_reduce(Z::Zonotope{Float64, Vector{Float64}, Matrix{Float64}}) # Reduce to dim(Z) generators
+    G::Matrix{Float64} = genmat(Z) # Get generators
 
-    U, S, V = svd(G) # Apply singular value decomposition (https://www.geeksforgeeks.org/machine-learning/singular-value-decomposition-svd/)
+    U::Matrix{Float64}, _, _ = svd(G) # Apply singular value decomposition (https://www.geeksforgeeks.org/machine-learning/singular-value-decomposition-svd/)
 
-    # U finds the eigenvectors of the covariance matrix
-    Z_red = linear_map(U, interval_hull(transpose(U) * Z))
+    Z_red::Zonotope{Float64, Vector{Float64}, Matrix{Float64}} = linear_map(U, (box_approximation(transpose(U) * Z)))
    
     return Z_red
 end

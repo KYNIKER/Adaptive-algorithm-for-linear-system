@@ -7,7 +7,7 @@ function load_motor()
     A, B, U = motor_model()
     X0, time_horizon, constraints = motor_specification()
     T = [0, time_horizon]
-    dimToPlot = 0
+    dimToPlot = 0#{0, 5}
     X0 = convert(Zonotope, X0)
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
     InputZonotope :: Zonotope = box_approximation(B*U) 

@@ -4,12 +4,14 @@ include("helperfunctions.jl")
 include("models.jl")
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
+include("models/motor/motor_load.jl")
 include("models/building/building_load.jl")
 include("models/PDE/pde_load.jl")
 #include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.01
+#const STATEGY = 1
 
 initialTimeStep = 0.0005
 strategy = 2
@@ -19,7 +21,12 @@ plotConstraint = true
 input = true
 
 if input
-    A,  ballβ, P₁, T, constraint, dimToPlot = load_pde()
+    A,  ballβ, P₁, T, constraint, dimToPlot = load_heat_input()
+    println("A invertible?", isinvertible(A))
+    #=ANorm = norm(A, Inf)
+    m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+    β = (exp(ANorm*(m))-1)*norm(ballβ)/ANorm
+    ballβ = Zonotope(zeros(dim(ballβ)), β*I(dim(ballβ)))=#
 else
     A, P₁, constraint, T, dimToPlot = loadHeat01()
 
@@ -45,7 +52,9 @@ corners2 = Vector(undef, size(boxes2, 1))
 @time begin
     for i in 1:(size(boxes2, 1))
         H = box_approximation(boxes2[i])
-        H_proj = project(H, [dimToPlot]) # Only get the dimension we care about
+        #println(H)
+        #H.radius = abs(H.radius)
+        H_proj = LazySets.project(H, [dimToPlot]) # Only get the dimension we care about
         corners2[i] = vertices_list(H_proj)
     end
 end
@@ -56,7 +65,7 @@ if plotConstraint
     maxVal = maximum(cornersToSearch)
     minVal = minimum(cornersToSearch)
     # Take min and max with constraint
-    constraintValAdjusted = constraint.b * 1.1
+    constraintValAdjusted = constraint[1].b * 1.1
     maxVal = max(maxVal, constraintValAdjusted) 
     minVal = min(minVal, constraintValAdjusted)
 
@@ -85,10 +94,10 @@ end
 ##
 
 if plotConstraint
-    if 0 < constraint.b
-        plot!(HalfSpace([0.0, -1.0], -constraint.b), lab="constraint", c=:purple)
+    if 0 < constraint[1].b
+        plot!(HalfSpace([0.0, -1.0], -constraint[1].b), lab="constraint", c=:purple)
     else
-        plot!(HalfSpace([0.0, 1.0], constraint.b), lab="constraint", c=:purple)
+        plot!(HalfSpace([0.0, 1.0], constraint[1].b), lab="constraint", c=:purple)
     end
 end
 

@@ -1,4 +1,4 @@
-using LazySets, LinearAlgebra, Plots
+using LazySets, LinearAlgebra, Plots, FastExpm
 
 using Random # For strategy 4
 
@@ -349,7 +349,7 @@ end
     r = sum(abs.(zonotope.generators .* h'))
     return l <= r
 end=#
-function intersects(zonotope::Zonotope, halfspace::HalfSpace) :: Bool
+function intersects(zonotope::Zonotope, halfspace::LazySets.HalfSpace) :: Bool
     c::Vector{Float64} = zonotope.center
     G::Matrix{Float64} = genmat(zonotope)
     h::Vector{Float64} = halfspace.a
@@ -393,4 +393,41 @@ function linear_map_zonotope_nD(M::AbstractMatrix, c::Vector{Float64}, G::Matrix
     c = M * c
     G = M * G
     return Zonotope(c, G)
+end
+# https://github.com/JuliaReach/ReachabilityAnalysis.jl/blob/master/src/Discretization/Exponentiation.jl l:341
+function Φ₂(A, δ, invertible = false)
+    let A = abs.(A)
+        if invertible
+            Aδ = A .* δ
+            Φ = fastExpm(Aδ)#; threshold=eps(Float64), nonzero_tol=eps(Float64))
+            n = size(A, 1)
+            N = eltype(A)
+            In = Matrix(one(N) * I, n, n)
+            B = Φ - In - Aδ
+            Ainv = inv(Matrix(A))
+            Ainvsqr = Ainv^2
+            return Ainvsqr * B
+        else
+            n = checksquare(A)
+            B = _P_3n(A, δ, n)
+            P = fastExpm(B; threshold=eps(Float64), nonzero_tol=eps(Float64))
+            return _P₂_blk(P, n)
+        end 
+    end
+end
+
+@inline function _P_3n(A::AbstractMatrix{N}, δ, n) where {N}
+    return [Matrix(A * δ) Matrix(δ * I, n, n) zeros(n, n);
+            zeros(n, 2 * n) Matrix(δ * I, n, n);
+            zeros(n, 3 * n)]::Matrix{N}
+end
+
+@inline _P₂_blk(P, n) = P[1:n, (2 * n + 1):(3 * n)]
+
+function E⁺(X, δ, A)
+    return convert(Zonotope, symmetric_interval_hull(Φ₂(A, δ, isinvertible(A)) * symmetric_interval_hull(A * A * X)))
+end
+
+function E_ψ(U, δ, A)
+    return convert(Zonotope, symmetric_interval_hull(Φ₂(A, δ, isinvertible(A)) * symmetric_interval_hull(A * U)))
 end

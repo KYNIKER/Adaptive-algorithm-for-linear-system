@@ -46,7 +46,7 @@ function loadHeat02(;)
     T = [0, 40]
     dimToPlot = xc
 
-    return A, X0, constraint, T, dimToPlot
+    return A, X0, [constraint], T, dimToPlot
 end
 
 # Simple models
