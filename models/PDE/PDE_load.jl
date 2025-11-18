@@ -3,7 +3,7 @@ using  ReachabilityAnalysis
 include("./pde_model.jl")
 include("./pde_specifications.jl")
 
-function load_heat_input()
+function load_pde()
     A, B, U = pde_model()
     X0, time_horizon, constraint = pde_specification()
     T = [0, time_horizon]

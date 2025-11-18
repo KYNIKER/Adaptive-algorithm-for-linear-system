@@ -1,7 +1,7 @@
 using LazySets, MAT
 
 function pde_model()
-    file = matopen(@current_path "pde.mat")
+    file = matopen("models/PDE/pde.mat")
 
     # system matrix
     A = float(read(file, "A"))  # the matrix has Int entries

@@ -5,20 +5,21 @@ include("models.jl")
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
 include("models/building/building_load.jl")
+include("models/PDE/pde_load.jl")
 #include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.01
 
-initialTimeStep = 0.2
+initialTimeStep = 0.0005
 strategy = 2
-Digits = 4
+Digits = 5
 reuse = true
 plotConstraint = true
 input = true
 
 if input
-    A,  ballβ, P₁, T, constraint, dimToPlot = load_heat_input()
+    A,  ballβ, P₁, T, constraint, dimToPlot = load_pde()
 else
     A, P₁, constraint, T, dimToPlot = loadHeat01()
 
@@ -37,7 +38,7 @@ end
 println("initialTimeStep: ", initialTimeStep)
 @time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
-@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+#@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 
 corners2 = Vector(undef, size(boxes2, 1))
 
