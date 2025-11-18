@@ -10,11 +10,11 @@ include("models/building/building_load.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.01
-#const STATEGY = 1
+const STRATEGY = 0
 
-initialTimeStep = 0.01
-strategy = 2
-Digits = 3
+initialTimeStep = 0.016
+#strategy = 1
+Digits = 5
 reuse = true
 plotConstraint = true
 input = true
@@ -44,7 +44,7 @@ end
 println("initialTimeStep: ", initialTimeStep)
 @time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
-@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+#@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 
 corners2 = Vector(undef, size(boxes2, 1))
 
@@ -101,7 +101,7 @@ if plotConstraint
 end
 
 println("Amount of attempts: ", sum(attemptsRecorder))
-println("Unique timesteps ", length(unique(timesteps)))
+println("Unique timesteps ", unique(timesteps))
 
 #println("List of attempts: ", attemptsRecorder)
 
