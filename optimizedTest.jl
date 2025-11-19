@@ -42,7 +42,6 @@ else
     ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
 end
 
-
 ###
 #@profview boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
 
@@ -100,9 +99,9 @@ end
 
 if plotConstraint
     if 0 < constraint[1].b
-        plot!(HalfSpace([0.0, -1.0], -constraint[1].b), lab="constraint", c=:purple)
+        plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="constraint", c=:purple)
     else
-        plot!(HalfSpace([0.0, 1.0], constraint[1].b), lab="constraint", c=:purple)
+        plot!(LazySets.HalfSpace([0.0, 1.0], constraint[1].b), lab="constraint", c=:purple)
     end
 end
 
