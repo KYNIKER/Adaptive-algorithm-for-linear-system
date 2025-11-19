@@ -7,6 +7,11 @@ include("models/motor/motor_load.jl")
 include("models/motor/motor_load.jl")
 include("models/building/building_load.jl")
 include("models/PDE/pde_load.jl")
+include("models/ISS/iss_load.jl")
+include("models/beam/beam_load.jl")
+include("models/FOM/fom_load.jl")
+include("models/MNA1/mna1_load.jl")
+include("models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
@@ -21,7 +26,7 @@ plotConstraint = true
 input = true
 
 if input
-    A,  ballβ, P₁, T, constraint, dimToPlot = load_heat_input()
+    A,  ballβ, P₁, T, constraint, dimToPlot = load_fom()
     println("A invertible?", isinvertible(A))
     #=ANorm = norm(A, Inf)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
