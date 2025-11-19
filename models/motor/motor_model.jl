@@ -9,7 +9,7 @@ function motor_model()
     A = Matrix{Float64}(sparse(I, J, V))
 
     # input matrix
-    B = sparse([4, 8], [1, 2], [-1.0, -1.0], size(A, 1), 1)
+    B = Matrix{Float64}(sparse([4, 8], [1, 2], [-1.0, -1.0]))
 
     # input domain
     U = Hyperrectangle([0.23, 0.3], [0.07, 0.1])
