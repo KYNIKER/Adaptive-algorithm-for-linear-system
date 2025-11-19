@@ -364,7 +364,7 @@ function intersects(zonotope::Zonotope, halfspace::LazySets.HalfSpace) :: Bool
     return l <= r#false
 end
 
-function intersects(halfspace::HalfSpace, zonotope::Zonotope)
+function intersects(halfspace::LazySets.HalfSpace, zonotope::Zonotope)
     intersects(zonotope, halfspace)
 end
 
