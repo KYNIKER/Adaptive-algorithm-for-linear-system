@@ -11,10 +11,10 @@ include("models/PDE/pde_load.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.01
-#const STATEGY = 1
+const STRATEGY = 0
 
-initialTimeStep = 0.0005
-strategy = 2
+initialTimeStep = 0.016
+#strategy = 1
 Digits = 5
 reuse = true
 plotConstraint = true
@@ -102,7 +102,7 @@ if plotConstraint
 end
 
 println("Amount of attempts: ", sum(attemptsRecorder))
-println("Unique timesteps ", length(unique(timesteps)))
+println("Unique timesteps ", unique(timesteps))
 
 #println("List of attempts: ", attemptsRecorder)
 

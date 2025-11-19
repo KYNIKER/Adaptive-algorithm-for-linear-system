@@ -399,7 +399,7 @@ function Φ₂(A, δ, invertible = false)
     let A = abs.(A)
         if invertible
             Aδ = A .* δ
-            Φ = fastExpm(Aδ)#; threshold=eps(Float64), nonzero_tol=eps(Float64))
+            Φ = fastExpm(Aδ; threshold=eps(Float64), nonzero_tol=eps(Float64))#; threshold=eps(Float64), nonzero_tol=eps(Float64))
             n = size(A, 1)
             N = eltype(A)
             In = Matrix(one(N) * I, n, n)

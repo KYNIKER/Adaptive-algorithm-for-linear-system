@@ -10,6 +10,8 @@ Based on "Efficient Computation of Reachable Sets of Linear Time-Invariant Syste
 Given a LTI system: x' = Ax + Bu(t)
 """
 function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer) where {N}
+    stepsBeforeReduce = 5
+    
     ANorm = norm(A, Inf)
     XNorm = norm(X0, Inf)::Float64
     XG = copy(genmat(X0))
@@ -30,7 +32,6 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     attemptsRecorder = Integer[]
 
     k = size(U.generators, 2)
-    STRATEGY = 0
 
     let ϕ :: Matrix{Float64} = fastExpm(A .* m; threshold=eps(Float64), nonzero_tol=eps(Float64))
         tempM = similar(ϕ)
@@ -41,12 +42,15 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
         P = minkowski_sum(dU, E_ψ(U, d, A))#minkowski_sum(U, linear_map(ϕ, U))
         #disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
         dia :: Matrix{Float64} = diagm(ones(XDim))
-
+        i = 1
         while d < initialTimeStep
             println("d: ", d)
             inputDiscritezationDict[d] = P
-            P = PCA_reduce(minkowski_sum(P, linear_map(ϕ, P)))
-            
+            P = minkowski_sum(P, linear_map(ϕ, P))
+            if i % stepsBeforeReduce == 0
+                P = PCA_reduce(P)
+            end
+            i += 1
             #=α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
             ϕp = (dia+ϕ)/2
             ϕm = (dia-ϕ)/2
@@ -87,7 +91,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
         println("disc: ", d)
         discritezationDict[d] = (copy(disc), copy(ϕ))
         #P = minkowski_sum(U, linear_map(ϕ, U))
-        inputDiscritezationDict[initialTimeStep] = PCA_reduce(P)
+        #P = minkowski_sum(dU, E_ψ(U, d, A))
+        inputDiscritezationDict[initialTimeStep] = P
     end
 
     println("Dicts done!")
@@ -109,7 +114,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
     #ϕT :: Matrix{Float64} = Φ
     newRR = copy(newR)
     einmal :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
-    (_, initialϕ) = discritezationDict[initialTimeStep]
+    (_, initialϕ :: Matrix{Float64}) = discritezationDict[initialTimeStep]
 
     tubes = []
 
@@ -121,7 +126,10 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
 
         if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
             V = linear_map(initialϕ, V)            
-            S = PCA_reduce(minkowski_sum(S, V))
+            S = minkowski_sum(S, V)
+            if i % stepsBeforeReduce == 0
+                S = PCA_reduce(S)
+            end
         end
 
         while !approveFlag
@@ -143,7 +151,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             changedTimeStep = false
             
             nsum :: Zonotope = minkowski_sum(newRR, S)
-            if mapreduce(c -> !intersects(nsum, c), &, constraint) #intersectss(msum.center, genmat(msum), h, f, tempXG)
+            if mapreduce(c -> !intersects(nsum, c), :(&&), constraint) #intersectss(msum.center, genmat(msum), h, f, tempXG)
                 approveFlag = true
                 push!(R, copy(newRR))
                 push!(tubes, copy(nsum))
