@@ -12,5 +12,5 @@ function load_building()
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
     InputZonotope :: Zonotope = box_approximation(B*U) 
 
-    return A, InputZonotope, X0, T, constraint, dimToPlot
+    return A, InputZonotope, X0, T, [constraint], dimToPlot
 end

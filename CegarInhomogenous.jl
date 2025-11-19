@@ -10,7 +10,7 @@ Based on "Efficient Computation of Reachable Sets of Linear Time-Invariant Syste
 Given a LTI system: x' = Ax + Bu(t)
 """
 function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer) where {N}
-    stepsBeforeReduce = 5
+    stepsBeforeReduce = 3
     
     ANorm = norm(A, Inf)
     XNorm = norm(X0, Inf)::Float64
@@ -33,66 +33,146 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
 
     k = size(U.generators, 2)
 
+    
+
     let ϕ :: Matrix{Float64} = fastExpm(A .* m; threshold=eps(Float64), nonzero_tol=eps(Float64))
         tempM = similar(ϕ)
         d = m
-        dU = box_approximation_symmetric(d * U)
-        #println(typeof(dU))
-        #println(typeof(E_ψ(U, d, A)))
-        P = minkowski_sum(dU, E_ψ(U, d, A))#minkowski_sum(U, linear_map(ϕ, U))
-        #disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
         dia :: Matrix{Float64} = diagm(ones(XDim))
         i = 1
-        while d < initialTimeStep
-            println("d: ", d)
-            inputDiscritezationDict[d] = P
-            P = minkowski_sum(P, linear_map(ϕ, P))
-            if i % stepsBeforeReduce == 0
-                P = PCA_reduce(P)
+        
+        if !(zeros(size(U.center)) ∈ U)
+            û = copy(U.center)
+            #U.center = U.center * 0
+            invA = inv(Matrix(A))
+            #P̂ = invA * (ϕ - dia) * û
+            U = Zonotope(U.center - û, genmat(U))
+
+            dU = box_approximation_symmetric(d * U)
+            #println(typeof(dU))
+            #println(typeof(E_ψ(U, d, A)))
+            P = minkowski_sum(dU, E_ψ(U, d, A))#minkowski_sum(U, linear_map(ϕ, U))
+            
+            #disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
+            while d < initialTimeStep
+                println("d: ", d)
+                inputDiscritezationDict[d] = P
+                P = minkowski_sum(P, linear_map(ϕ, P))
+                if i % stepsBeforeReduce == 0
+                    P = PCA_reduce(P)
+                end
+                i += 1
+                #=α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
+                ϕp = (dia+ϕ)/2
+                ϕm = (dia-ϕ)/2
+                gens::Matrix{Float64} = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
+
+                disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
+                =#
+                #disc = minkowski_sum(convex_hull(X0, ϕ * minkowski_sum(X0, box_approximation_symmetric(d * U))),minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+                P̂ = invA * (ϕ - dia) * û
+                #println(P̂)
+                lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+                println("lt")
+                rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+                println("rt")
+
+                #println(typeof(lt), " vs ", typeof(rt))
+                PZ = Zonotope(P̂, zeros(Float64, size(U.center, 1), 1))
+                f = concretize(minkowski_sum(lt, rt))
+                
+                disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)
+                println("disc: ", d)
+                discritezationDict[d] = (copy(Zonotope(disc.center - PZ.center, genmat(disc))), copy(ϕ))
+
+                mul!(tempM, ϕ , ϕ)
+                copy!(ϕ, tempM)
+                d = d * 2
             end
-            i += 1
+
             #=α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
             ϕp = (dia+ϕ)/2
             ϕm = (dia-ϕ)/2
-            gens::Matrix{Float64} = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
+            gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
 
             disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
             =#
-            #disc = minkowski_sum(convex_hull(X0, ϕ * minkowski_sum(X0, box_approximation_symmetric(d * U))),minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+            P̂ = invA * (ϕ - dia) * û
+            #println(P̂)
             lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
             println("lt")
             rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
             println("rt")
 
             #println(typeof(lt), " vs ", typeof(rt))
-            disc = overapproximate(CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
+            PZ = Zonotope(P̂, zeros(Float64, size(U.center, 1), 1))
+            f = concretize(minkowski_sum(lt, rt))
+            
+            disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)
+            println("disc: ", d)
+            discritezationDict[d] = (copy(Zonotope(disc.center, genmat(disc))), copy(ϕ))
+
+            #P = minkowski_sum(U, linear_map(ϕ, U))
+            #P = minkowski_sum(dU, E_ψ(U, d, A))
+            inputDiscritezationDict[initialTimeStep] = P
+        else
+        
+            dU = box_approximation_symmetric(d * U)
+            #println(typeof(dU))
+            #println(typeof(E_ψ(U, d, A)))
+            P = minkowski_sum(dU, E_ψ(U, d, A))#minkowski_sum(U, linear_map(ϕ, U))
+            #disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
+            while d < initialTimeStep
+                println("d: ", d)
+                inputDiscritezationDict[d] = P
+                P = minkowski_sum(P, linear_map(ϕ, P))
+                if i % stepsBeforeReduce == 0
+                    P = PCA_reduce(P)
+                end
+                i += 1
+                #=α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
+                ϕp = (dia+ϕ)/2
+                ϕm = (dia-ϕ)/2
+                gens::Matrix{Float64} = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
+
+                disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
+                =#
+                #disc = minkowski_sum(convex_hull(X0, ϕ * minkowski_sum(X0, box_approximation_symmetric(d * U))),minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+                lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+                println("lt")
+                rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+                println("rt")
+
+                #println(typeof(lt), " vs ", typeof(rt))
+                disc = overapproximate(CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
+                println("disc: ", d)
+                discritezationDict[d] = (copy(disc), copy(ϕ))
+
+                mul!(tempM, ϕ , ϕ)
+                copy!(ϕ, tempM)
+                d = d * 2
+            end
+
+            #=α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
+            ϕp = (dia+ϕ)/2
+            ϕm = (dia-ϕ)/2
+            gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
+
+            disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
+            =#
+            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+            println("lt")
+            rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+            println("rt")
+
+            #println(typeof(lt), " vs ", typeof(rt))
+            disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
             println("disc: ", d)
             discritezationDict[d] = (copy(disc), copy(ϕ))
-
-            mul!(tempM, ϕ , ϕ)
-            copy!(ϕ, tempM)
-            d = d * 2
+            #P = minkowski_sum(U, linear_map(ϕ, U))
+            #P = minkowski_sum(dU, E_ψ(U, d, A))
+            inputDiscritezationDict[initialTimeStep] = P
         end
-
-        #=α = (exp(ANorm * d) - 1 - d * ANorm) / XNorm
-        ϕp = (dia+ϕ)/2
-        ϕm = (dia-ϕ)/2
-        gens = hcat(ϕp * XG, ϕm * XC, ϕm * XG, α*dia) #hcat(ϕp * XG, ϕm * XC, ϕm * XG)
-
-        disc = Zonotope(ϕp*XC, gens)#minkowski_sum(Zonotope(ϕp*XC, gens), Zonotope(zeros(XDim), α*dia))
-        =#
-        lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
-        println("lt")
-        rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
-        println("rt")
-
-        #println(typeof(lt), " vs ", typeof(rt))
-        disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
-        println("disc: ", d)
-        discritezationDict[d] = (copy(disc), copy(ϕ))
-        #P = minkowski_sum(U, linear_map(ϕ, U))
-        #P = minkowski_sum(dU, E_ψ(U, d, A))
-        inputDiscritezationDict[initialTimeStep] = P
     end
 
     println("Dicts done!")

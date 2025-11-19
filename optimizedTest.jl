@@ -13,15 +13,15 @@ include("CegarInhomogenous.jl")
 const μ = 0.01
 const STRATEGY = 0
 
-initialTimeStep = 0.016
+initialTimeStep = 0.001
 #strategy = 1
-Digits = 5
+Digits = 4
 reuse = true
 plotConstraint = true
 input = true
 
 if input
-    A,  ballβ, P₁, T, constraint, dimToPlot = load_heat_input()
+    A,  ballβ, P₁, T, constraint, dimToPlot = load_building()
     println("A invertible?", isinvertible(A))
     #=ANorm = norm(A, Inf)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
