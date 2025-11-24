@@ -11,18 +11,18 @@ include("models/PDE/pde_load.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.01
-const STRATEGY = 2
+const STRATEGY = 1
 
-initialTimeStep = 0.2
+initialTimeStep = 0.1
 #strategy = 1
-Digits = 3
+Digits = 4
 reuse = true
 plotConstraint = true
 input = true
 plotOutput = false
 
 if input
-    A,  ballβ, P₁, T, constraint, dimToPlot = load_building()
+    A,  ballβ, P₁, T, constraint, dimToPlot = load_pde()
     println("A invertible?", isinvertible(A))
     #=ANorm = norm(A, Inf)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
@@ -38,14 +38,15 @@ else
     ballβ = Zonotope(zeros(dim(P₁)), β*I(dim(P₁)))
 end
 
+constraint = isa(constraint, Array) ? constraint : [constraint]
 
 ###
 #@profview boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
 
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
 println("initialTimeStep: ", initialTimeStep)
-_, _, _ = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
-@btime boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+@btime cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
 #@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 if plotOutput
