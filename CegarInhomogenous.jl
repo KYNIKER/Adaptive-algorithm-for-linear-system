@@ -46,12 +46,12 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             #U.center = U.center * 0
             invA = inv(Matrix(A))
             #P̂ = invA * (ϕ - dia) * û
-            U = Zonotope(U.center - û, genmat(U))
+            Ut = Zonotope(U.center - û, genmat(U))
 
-            dU = box_approximation_symmetric(d * U)
+            dU = box_approximation_symmetric(d * Ut)
             #println(typeof(dU))
             #println(typeof(E_ψ(U, d, A)))
-            P = minkowski_sum(dU, E_ψ(U, d, A))#minkowski_sum(U, linear_map(ϕ, U))
+            P = minkowski_sum(dU, E_ψ(Ut, d, A))#minkowski_sum(U, linear_map(ϕ, U))
             
             #disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
             while d < initialTimeStep
@@ -72,9 +72,9 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
                 #disc = minkowski_sum(convex_hull(X0, ϕ * minkowski_sum(X0, box_approximation_symmetric(d * U))),minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
                 P̂ = invA * (ϕ - dia) * û
                 #println(P̂)
-                lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+                lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
                 println("lt")
-                rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+                rt = concretize(minkowski_sum(E_ψ(Ut, d, A), E⁺(X0, d, A)))
                 println("rt")
 
                 #println(typeof(lt), " vs ", typeof(rt))
@@ -99,9 +99,9 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             =#
             P̂ = invA * (ϕ - dia) * û
             #println(P̂)
-            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
             println("lt")
-            rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+            rt = concretize(minkowski_sum(E_ψ(Ut, d, A), E⁺(X0, d, A)))
             println("rt")
 
             #println(typeof(lt), " vs ", typeof(rt))
