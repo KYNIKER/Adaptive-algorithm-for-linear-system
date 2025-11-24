@@ -19,7 +19,7 @@ function loadHeat01(;)
     A = Matrix(A)
     X0 = convert(Zonotope, Ω₀)
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators)) # Convert to dense
-    constraint = HalfSpace(ℓ, 0.10369)
+    constraint = LazySets.HalfSpace(ℓ, 0.10369)
     T = [0, 40]
     dimToPlot = xc
 
@@ -42,7 +42,7 @@ function loadHeat02(;)
     A = Matrix(A)
     X0 = convert(Zonotope, Ω₀)
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
-    constraint = HalfSpace(ℓ, 0.02966)
+    constraint = LazySets.HalfSpace(ℓ, 0.02966)
     T = [0, 40]
     dimToPlot = xc
 
@@ -56,7 +56,7 @@ function loadCosWave()
            -2.5 0.]
     P = Zonotope([0., 1.5], [[0.0; 0.05]])
 
-    constraint = HalfSpace([0., 1.], -1.8)
+    constraint = LazySets.HalfSpace([0., 1.], -1.8)
     T = [0, 8]
     dimToPlot = 2
     return A, P, constraint, T, dimToPlot
@@ -76,7 +76,7 @@ function loadCrane() # From https://github.com/JuliaReach/ReachabilityModels.jl/
       [2.5, 0.0, 0.2, 0.1, 0.0, 0.0])
 
     X0 = convert(Zonotope, X0)
-    constraint = HalfSpace([0., 0., 0., 0., 0., 1.], -1.57)
+    constraint = LazySets.HalfSpace([0., 0., 0., 0., 0., 1.], -1.57)
     T = [0, 15]
     dimToPlot = 6
     return A, X0, constraint, T, dimToPlot
@@ -93,7 +93,7 @@ function loadEclipse()
     generators = (α * 0.1 + (1 - α) * 0.2) * Matrix(I, 2, 2);
 
     Z0 = Zonotope(center, generators)
-    constraint = HalfSpace([0., 1.], -5.)
+    constraint = LazySets.HalfSpace([0., 1.], -5.)
     T = [0, 15]
     dimToPlot = 2
 
@@ -120,7 +120,7 @@ function loadFiveDimSys()
     Z0 = convert(Zonotope, X0)
 
     T = [0, 5]
-    constraint = HalfSpace([0., 0., 0, 1., 0.], -5.)
+    constraint = LazySets.HalfSpace([0., 0., 0, 1., 0.], -5.)
     dimToPlot = 4
 
     return A, Z0, constraint, T, dimToPlot
@@ -137,7 +137,7 @@ function loadProjectile()
     Z0 = convert(Zonotope, X0)  
 
     T = [0, 20]
-    constraint = HalfSpace([1, 0., 0, 0.], -0.5)
+    constraint = LazySets.HalfSpace([1, 0., 0, 0.], -0.5)
     dimToPlot = 1
 
     return A, Z0, constraint, T, dimToPlot
@@ -169,7 +169,7 @@ function loadVehiclePlatoon5()
     halfspaceInput = zeros(15)
     dimToPlot = 11
     halfspaceInput[dimToPlot] = 1
-    constraint = HalfSpace(halfspaceInput, -1.)
+    constraint = LazySets.HalfSpace(halfspaceInput, -1.)
 
 
     return A, Z0, constraint, T, dimToPlot
@@ -216,7 +216,7 @@ function loadVehiclePlatoon10()
     halfspaceInput = zeros(30)
     dimToPlot = 2
     halfspaceInput[dimToPlot] = 1
-    constraint = HalfSpace(halfspaceInput, -1.)
+    constraint = LazySets.HalfSpace(halfspaceInput, -1.)
 
 
     return A, Z0, constraint, T, dimToPlot

@@ -7,6 +7,11 @@ include("models/motor/motor_load.jl")
 include("models/motor/motor_load.jl")
 include("models/building/building_load.jl")
 include("models/PDE/pde_load.jl")
+include("models/ISS/iss_load.jl")
+include("models/beam/beam_load.jl")
+include("models/FOM/fom_load.jl")
+include("models/MNA1/mna1_load.jl")
+include("models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
@@ -96,13 +101,13 @@ if plotOutput
     end
     ##
 
-    if plotConstraint
-        if 0 < constraint[1].b
-            plot!(HalfSpace([0.0, -1.0], -constraint[1].b), lab="constraint", c=:purple)
-        else
-            plot!(HalfSpace([0.0, 1.0], constraint[1].b), lab="constraint", c=:purple)
-        end
+if plotConstraint
+    if 0 < constraint[1].b
+        plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="constraint", c=:purple)
+    else
+        plot!(LazySets.HalfSpace([0.0, 1.0], constraint[1].b), lab="constraint", c=:purple)
     end
+end
 
     println("Amount of attempts: ", sum(attemptsRecorder))
     println("Unique timesteps ", unique(timesteps))

@@ -6,7 +6,7 @@ function heat_specification()
                         high=[fill(0.625, 2); zeros(198)])
 
     # safety property: x133 ≤ 0.1
-    property = HalfSpace(sparsevec([133], [1.0], 200), 0.1)
+    property = LazySets.HalfSpace(sparsevec([133], [1.0], 200), 0.1)
 
     # time horizon: 20 time units
     time_horizon = 20.0
