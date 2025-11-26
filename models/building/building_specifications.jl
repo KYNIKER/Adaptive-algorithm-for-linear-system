@@ -9,7 +9,7 @@ function building_specification()
                         high=[fill(0.00025, 10); zeros(14); 0.0001; zeros(23)])
 
     # safety property: x25 ≤ 6e-3
-    property = HalfSpace(sparsevec([25], [1.0], 48), 6e-3)
+    property = LazySets.HalfSpace(sparsevec([25], [1.0], 48), 6e-3)
 
     # time horizon: 20 time units
     time_horizon = 20.0

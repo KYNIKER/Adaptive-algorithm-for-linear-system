@@ -6,7 +6,7 @@ function fom_specification()
 
     # safety property: y ≤ 185 for linear combination y (defined in out.mat)
     y = read(matopen("models/FOM/out.mat"), "M")[1, :]
-    property = HalfSpace(y, 185.0)
+    property = LazySets.HalfSpace(y, 185.0)
 
     # time horizon: 20 time units
     time_horizon = 20.0
