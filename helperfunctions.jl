@@ -408,7 +408,7 @@ function Φ₂(A, δ, invertible = false)
             Ainvsqr = Ainv^2
             return Ainvsqr * B
         else
-            n = checksquare(A)
+            n = LinearAlgebra.checksquare(A)
             B = _P_3n(A, δ, n)
             P = fastExpm(B; threshold=eps(Float64), nonzero_tol=eps(Float64))
             return _P₂_blk(P, n)

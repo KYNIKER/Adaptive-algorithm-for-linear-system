@@ -1,4 +1,4 @@
-using LazySets, LinearAlgebra, Printf, FastExpm, Polyhedra#, CDDLib
+using LazySets, LinearAlgebra, Printf, FastExpm#, Polyhedra#, CDDLib
 
 include("helperfunctions.jl")
 include("reductionMethods.jl")
@@ -10,7 +10,7 @@ Based on "Efficient Computation of Reachable Sets of Linear Time-Invariant Syste
 Given a LTI system: x' = Ax + Bu(t)
 """
 function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer) where {N}
-    stepsBeforeReduce = 3
+    stepsBeforeReduce = 4
     
     ANorm = norm(A, Inf)
     XNorm = norm(X0, Inf)::Float64
@@ -80,7 +80,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
                 f = concretize(minkowski_sum(lt, rt))
                 
                 disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)
-                discritezationDict[d] = (copy(Zonotope(disc.center - PZ.center, genmat(disc))), copy(ϕ))
+                discritezationDict[d] = (copy(disc), copy(ϕ))#(copy(Zonotope(disc.center - PZ.center, genmat(disc))), copy(ϕ))
 
                 mul!(tempM, ϕ , ϕ)
                 copy!(ϕ, tempM)
@@ -104,7 +104,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             f = concretize(minkowski_sum(lt, rt))
             
             disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)
-            discritezationDict[d] = (copy(Zonotope(disc.center, genmat(disc))), copy(ϕ))
+            discritezationDict[d] = (copy(disc), copy(ϕ))
 
             #P = minkowski_sum(U, linear_map(ϕ, U))
             #P = minkowski_sum(dU, E_ψ(U, d, A))
@@ -117,7 +117,7 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
             P = minkowski_sum(dU, E_ψ(U, d, A))#minkowski_sum(U, linear_map(ϕ, U))
             #disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
             while d < initialTimeStep
-                #println("d: ", d)
+                println("d: ", d)
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
                 if i % stepsBeforeReduce == 0
@@ -137,7 +137,8 @@ function cegarInputSystem(A, initialTimeStep, interval, X0::Zonotope{N,Vector{N}
 
 
                 #println(typeof(lt), " vs ", typeof(rt))
-                disc = overapproximate(CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
+                f = concretize(minkowski_sum(lt, rt))
+                disc = overapproximate(CH(X0, f), Zonotope)
                 discritezationDict[d] = (copy(disc), copy(ϕ))
 
                 mul!(tempM, ϕ , ϕ)
