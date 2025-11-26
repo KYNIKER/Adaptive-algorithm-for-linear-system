@@ -15,19 +15,19 @@ include("models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
 
-const μ = 0.01
-const STRATEGY = 1
+const μ = 0.1
+const STRATEGY = 2
 
-initialTimeStep = 0.1
+initialTimeStep = 0.5
 #strategy = 1
-Digits = 4
+Digits = 3
 reuse = true
 plotConstraint = true
 input = true
-plotOutput = false
+plotOutput = true
 
 if input
-    A,  ballβ, P₁, T, constraint, dimToPlot = load_pde()
+    A,  ballβ, P₁, T, constraint, dimToPlot = load_building()
     println("A invertible?", isinvertible(A))
     #=ANorm = norm(A, Inf)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
@@ -51,13 +51,15 @@ constraint = isa(constraint, Array) ? constraint : [constraint]
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
 println("initialTimeStep: ", initialTimeStep)
 boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
-@btime cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+
+# cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
 #@profview boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 if plotOutput
     corners2 = Vector(undef, size(boxes2, 1))
 
-    @time begin
+    begin
         for i in 1:(size(boxes2, 1))
             H = box_approximation(boxes2[i])
             #println(H)
@@ -85,7 +87,7 @@ if plotOutput
 
     shapes2 = Vector{Shape}(undef, size(boxes2, 1))
 
-    @time rectangleFromHBoxWithTimestepArray(shapes2, corners2, timesteps, minimum(T), 1)
+    rectangleFromHBoxWithTimestepArray(shapes2, corners2, timesteps, minimum(T), 1)
 
     for i in eachindex(shapes2)
         attemptCount = attemptsRecorder[i]
