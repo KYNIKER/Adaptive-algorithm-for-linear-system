@@ -10,7 +10,7 @@ function pde_specification()
 
     # safety property: y ≤ 12 for linear combination y (defined in out.mat)
     y = read(matopen("models/PDE/out.mat"), "M")[1, :]
-    property = HalfSpace(y, 12.0)
+    property = LazySets.HalfSpace(y, 12.0)
 
     # time horizon: 20 time units
     time_horizon = 20.0

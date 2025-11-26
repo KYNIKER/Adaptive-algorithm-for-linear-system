@@ -30,3 +30,7 @@ JuliaLocalPreferences.toml
 # Model files
 JLD2_Files/*
 !JLD2_Files/.gitkeep
+
+# Results
+results/*
+results/.gitkeep

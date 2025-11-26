@@ -6,7 +6,7 @@ function beam_specification()
                         high=[zeros(300); fill(0.002, 48)])
 
     # safety property: x89 ≤ 2100
-    property = HalfSpace(sparsevec([89], [1.0], 348), 2100.0)
+    property = LazySets.HalfSpace(sparsevec([89], [1.0], 348), 2100.0)
 
     # time horizon: 20 time units
     time_horizon = 20.0

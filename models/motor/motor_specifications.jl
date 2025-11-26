@@ -10,7 +10,7 @@ function motor_specification()
                         [0.00025, 0.0, 0.0, 0.0, 0.00025, 0.0, 0.0, 0.0])
 
     # safety property: x1 ≤ 0.35 ∨ x5 ≤ 0.45
-    property = [HalfSpace([1.0; zeros(7)], 0.35), HalfSpace([zeros(4); 1.0; zeros(3)], 0.45)]
+    property = [LazySets.HalfSpace([1.0; zeros(7)], 0.35), LazySets.HalfSpace([zeros(4); 1.0; zeros(3)], 0.45)]
 
     # time horizon: 20 time units
     time_horizon = 20.0
