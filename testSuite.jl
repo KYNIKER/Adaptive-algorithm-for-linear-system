@@ -19,7 +19,7 @@ include("CegarInhomogenous.jl")
 #fileLoads = [load_beam, load_building, load_fom, load_heat_input, load_iss, load_motor, load_pde]
 
 
-const STRATEGY = 0
+const STRATEGY = 2
 
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
 function runBenchmark(name, initialTimeStep, Digits, load_func)
@@ -30,13 +30,17 @@ function runBenchmark(name, initialTimeStep, Digits, load_func)
     A, ballβ, P₁, T, constraint, _ = load_func() # load
     b = @benchmarkable _, _, _ = cegarInputSystem($A, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits)
 
-
     tune!(b) # Tune to find the optimal samples/evals
     y = run(b)
 
-    # Write to csv file
-    df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(y.times), medianTime = median(y.times), memory = y.memory, allocs = y.allocs)
+    # Convert time to seconds from nanoseconds
+    timeList = []
+    for timeVal in y.times
+        push!(timeList, timeVal / 1e9)
+    end
 
+    # Write to csv file
+    df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(timeList), medianTime = median(timeList), memory = y.memory, allocs = y.allocs)
 
     filename = "results/" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
@@ -48,7 +52,6 @@ function runBenchmark(name, initialTimeStep, Digits, load_func)
             CSV.write(File, df, delim = ";",writeheader = true)
         end
     end
-
 
     println("Completed run for: ", name)
 end
