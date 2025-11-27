@@ -19,16 +19,14 @@ include("CegarInhomogenous.jl")
 #fileLoads = [load_beam, load_building, load_fom, load_heat_input, load_iss, load_motor, load_pde]
 
 
-const STRATEGY = 2
-
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
-function runBenchmark(name, initialTimeStep, Digits, load_func)
+function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     println("Running benchmark for: ", name)
 
     # Actual run
     GC.gc()# Force garbage collection
     A, ballβ, P₁, T, constraint, _ = load_func() # load
-    b = @benchmarkable _, _, _ = cegarInputSystem($A, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits)
+    b = @benchmarkable _ = cegarInputSystemNoOutput($A, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits, $STRATEGY)
 
     tune!(b) # Tune to find the optimal samples/evals
     y = run(b)
@@ -39,8 +37,11 @@ function runBenchmark(name, initialTimeStep, Digits, load_func)
         push!(timeList, timeVal / 1e9)
     end
 
+    # Run once to find if Successful
+    isSuccess = cegarInputSystemNoOutput(A, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+
     # Write to csv file
-    df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(timeList), medianTime = median(timeList), memory = y.memory, allocs = y.allocs)
+    df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(timeList), medianTime = median(timeList), success = isSuccess, memory = y.memory, allocs = y.allocs)
 
     filename = "results/" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
@@ -56,7 +57,9 @@ function runBenchmark(name, initialTimeStep, Digits, load_func)
     println("Completed run for: ", name)
 end
 
-runBenchmark("building", 0.5, 3, load_building)
+#runBenchmark("FOM", 0.5, 5, load_fom, 2)
+runBenchmark("building", 0.5, 3, load_building, 2)
+
 
 
 
