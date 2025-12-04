@@ -10,7 +10,7 @@ function load_beam()
     dimToPlot = 89
     X0 = convert(Zonotope, X0)
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
-    InputZonotope :: Zonotope = box_approximation(B*U) 
-
-    return A, InputZonotope, X0, T, [constraint], dimToPlot
+    InputZonotope :: Zonotope = U#B*U
+    #println(InputZonotope)
+    return A, B, InputZonotope, X0, T, [constraint], dimToPlot
 end

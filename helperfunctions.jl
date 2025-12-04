@@ -403,14 +403,14 @@ function Φ₂(A, δ, invertible = false)
             n = size(A, 1)
             N = eltype(A)
             In = Matrix(one(N) * I, n, n)
-            B = Φ - In - Aδ
+            C = Φ - In - Aδ
             Ainv = inv(Matrix(A))
             Ainvsqr = Ainv^2
-            return Ainvsqr * B
+            return Ainvsqr * C
         else
             n = LinearAlgebra.checksquare(A)
-            B = _P_3n(A, δ, n)
-            P = fastExpm(B; threshold=eps(Float64), nonzero_tol=eps(Float64))
+            C = _P_3n(A, δ, n)
+            P = fastExpm(C; threshold=eps(Float64), nonzero_tol=eps(Float64))
             return _P₂_blk(P, n)
         end 
     end

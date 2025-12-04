@@ -10,7 +10,7 @@ function load_motor()
     dimToPlot = 5
     X0 = convert(Zonotope, X0)
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
-    InputZonotope :: Zonotope = box_approximation(B*U) 
+    InputZonotope :: Zonotope = U#box_approximation(B*U) 
 
-    return A, InputZonotope, X0, T, constraints, dimToPlot
+    return A, B, InputZonotope, X0, T, constraints, dimToPlot
 end

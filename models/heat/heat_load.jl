@@ -11,7 +11,7 @@ function load_heat_input()
     X0 = convert(Zonotope, X0)
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
     
-    InputZonotope :: Zonotope = B*U
+    InputZonotope :: Zonotope = U
 
-    return A, InputZonotope, X0, T, [constraint], dimToPlot
+    return A, B, InputZonotope, X0, T, [constraint], dimToPlot
 end
