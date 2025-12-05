@@ -25,8 +25,8 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
 
     # Actual run
     GC.gc()# Force garbage collection
-    A, ballβ, P₁, T, constraint, _ = load_func() # load
-    b = @benchmarkable _ = cegarInputSystemNoOutput($A, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits, $STRATEGY)
+    A, B, ballβ, P₁, T, constraint, _ = load_func() # load
+    b = @benchmarkable _ = cegarInputSystemNoOutput($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits, $STRATEGY)
 
     tune!(b) # Tune to find the optimal samples/evals
     y = run(b)
@@ -38,7 +38,7 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     end
 
     # Run once to find if Successful
-    isSuccess = cegarInputSystemNoOutput(A, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+    isSuccess = cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 
     # Write to csv file
     df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(timeList), medianTime = median(timeList), success = isSuccess, memory = y.memory, allocs = y.allocs)

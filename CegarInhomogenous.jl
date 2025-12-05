@@ -367,14 +367,19 @@ end
 
 function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
     stepsBeforeReduce = 10
-    maxOrder = 1
+    maxOrder = 40
     XG = copy(genmat(X0))
     XDim, p = size(XG)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
+
+    elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
     phiDict = Dict{Float64,  Matrix{Float64}}()
+    sizehint!(phiDict, elems)
     discritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(discritezationDict, elems)
     inputDiscritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(inputDiscritezationDict, elems)
 
     time::Float64 = minimum(interval)
     endtime::Float64 = maximum(interval)
@@ -390,13 +395,15 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         d = m
         dia :: Matrix{Float64} = diagm(ones(XDim))
         
-        if !(zeros(size(U.center)) ∈ U) #Origin is *not* in input
+        if !(ρ(U.center, U) < norm(U.center)) #Origin is *not* in input
             println("Vi er her")
             û = copy(U.center)
             invA = inv(Matrix(A))
             Ut = Zonotope(U.center - û, genmat(U))
             dU = box_approximation_symmetric(d * Ut)
             P = minkowski_sum(dU, E_ψ(Ut, d, A))
+            #println(typeof(P))
+            #P = PCA_reduce(P)
 
             P̂ = invA * (ϕ - dia) * û
             lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
@@ -408,8 +415,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             while d < initialTimeStep
                 #inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if div(size(genmat(P))...) > maxOrder
-                    P = PCA_reduce(P)
+                if order(P) > maxOrder 
+                    println("REDUCE!")
+                    P = reduce_order(P, 1)
                 end
                 
                 #=P̂ = invA * (ϕ - dia) * û
@@ -438,7 +446,11 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             phiDict[d] = copy(ϕ)
             #dU = box_approximation_symmetric(initialTimeStep * Ut)
             #P = minkowski_sum(dU, E_ψ(Ut, initialTimeStep, A))
-            inputDiscritezationDict[initialTimeStep] = PCA_reduce(P)
+            if order(P) > 1
+                println("REDUCE!")
+                P = reduce_order(P, 1)
+            end
+            inputDiscritezationDict[initialTimeStep] = P
         else
             dU = box_approximation_symmetric(d * U)
             P = minkowski_sum(dU, E_ψ(U, d, A))
@@ -467,7 +479,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
             discritezationDict[d] = copy(disc)
             phiDict[d] = copy(ϕ)
-            inputDiscritezationDict[initialTimeStep] = P
+            inputDiscritezationDict[initialTimeStep] = FirstOrderZonotope(P)
         end
     end
 
@@ -494,10 +506,12 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         approveFlag = false
 
         if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
+            println(time)
             V = concretize(linear_map(initialϕ, V))
             S = concretize(minkowski_sum(S, V))
-            if div(size(genmat(S))...) > maxOrder
-                S = PCA_reduce(S)
+            if order(S) > maxOrder
+                println("REDUCE!")
+                S = reduce_order(S, 2)
             end
         end
 
@@ -530,9 +544,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             end
         end
 
-        if i % 1 == 0
+        #=if i % 1 == 0
             println("Time: ", time, " Attempts: ", attempts)
-        end
+        end=#
 
         #push!(R, msum)
     

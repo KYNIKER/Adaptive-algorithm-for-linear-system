@@ -1,5 +1,5 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, FastExpm
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, FastExpm, Profile, PProf
 include("helperfunctions.jl")
 include("models.jl")
 include("models/heat/heat_load.jl")
@@ -18,16 +18,16 @@ include("CegarInhomogenous.jl")
 const μ = 0.001
 const STRATEGY = 1
 
-initialTimeStep = 1.0
+initialTimeStep = 0.0005
 #strategy = 1
-Digits = 3
+Digits = 5
 reuse = true
 plotConstraint = true
 input = true
-plotOutput = true
+plotOutput = false
 
 if input
-    A, B, ballβ, P₁, T, constraint, dimToPlot = load_building()
+    A, B, ballβ, P₁, T, constraint, dimToPlot = load_beam()
     #t1 = fastExpm(A .* 1; threshold=eps(Float64), nonzero_tol=eps(Float64))
     #t2 = fastExpm(A .* 0.25; threshold=eps(Float64), nonzero_tol=eps(Float64))
     #println(unique(t1 - t2 * t2 * t2 * t2))
@@ -57,12 +57,19 @@ println("initialTimeStep: ", initialTimeStep)
 #@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 
 #sent = OneTimeStepSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
-@time cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+res = cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+
+#=Profile.Allocs.clear()
+Profile.Allocs.@profile sample_rate=1.0 cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+
+PProf.Allocs.pprof(from_c=false)=#
+
+#@profview cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 # cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
-boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 
 if plotOutput
+    boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits)
     corners2 = Vector(undef, size(boxes2, 1))
 
     begin

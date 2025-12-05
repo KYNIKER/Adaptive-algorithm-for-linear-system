@@ -422,7 +422,7 @@ end
             zeros(n, 3 * n)]::Matrix{N}
 end
 
-@inline _P₂_blk(P, n) = P[1:n, (2 * n + 1):(3 * n)]
+@inline _P₂_blk(P, n) = P[1:n, (2 * n + 1):(3 * n)] #@view(P[1:n, (2 * n + 1):(3 * n)])
 
 function E⁺(X, δ, A)
     return convert(Zonotope, symmetric_interval_hull(Φ₂(A, δ, isinvertible(A)) * symmetric_interval_hull(A * A * X)))
