@@ -384,6 +384,11 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
     inputDiscritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
     sizehint!(inputDiscritezationDict, elems)
 
+    constraintProjVectors = map(x -> x.a / norm(x.a), constraint)
+    constraintProjBounds = ρ.(constraintProjVectors, constraint)
+    println(constraintProjBounds)
+
+
     time::Float64 = minimum(interval)
     endtime::Float64 = maximum(interval)
 
@@ -418,10 +423,10 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             while d < initialTimeStep
                 #inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
+                #=if order(P) > maxOrder 
                     println("REDUCE!")
                     P = reduce_order(P, maxOrder / 2)
-                end
+                end=#
                 
                 #=P̂ = invA * (ϕ - dia) * û
                 lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
@@ -449,10 +454,10 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             phiDict[d] = copy(ϕ)
             #dU = box_approximation_symmetric(initialTimeStep * Ut)
             #P = minkowski_sum(dU, E_ψ(Ut, initialTimeStep, A))
-            if order(P) > 1
+            #=if order(P) > 1
                 println("REDUCE!")
                 P = reduce_order(P, 1)
-            end
+            end=#
             inputDiscritezationDict[initialTimeStep] = P
         else
             dU = box_approximation_symmetric(d * U)
@@ -492,7 +497,8 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
     #STEPS = ceil(Integer, endtime / initialTimeStep) + 1
     V :: Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
 
-    S ::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
+    #S ::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
+    Sρ = map(x -> ρ(x, V), constraintProjVectors)
     newR :: Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
     i = 1
 
@@ -510,13 +516,14 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         approveFlag = false
 
         if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
-            #println(time)
-            V = concretize(linear_map(initialϕ, V))
-            S = concretize(minkowski_sum(S, V))
-            if order(S) > maxOrder
+            println(time)
+            V = linear_map(initialϕ, V)
+            #S = concretize(minkowski_sum(S, V))
+            Sρ += map(x -> ρ(x, V), constraintProjVectors)
+            #=if order(S) > maxOrder
                 #println("REDUCE!")
                 S = reduce_order(S, 2)
-            end
+            end=#
         end
 
         while !approveFlag
@@ -535,8 +542,8 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
 
             changedTimeStep = false
             
-            nsum :: Zonotope = minkowski_sum(newRR, S)
-            if mapreduce(c -> !intersects(nsum, c), &, constraint) 
+            #nsum :: Zonotope = minkowski_sum(newRR, S)
+            if reduce(&, <=(map(x -> dot(newRR.center, x), constraintProjVectors) + map(x -> ρ(x, newRR), constraintProjVectors) + Sρ, constraintProjBounds)) #mapreduce(c -> !intersects(nsum, c), &, constraint) 
                 approveFlag = true
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
