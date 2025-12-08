@@ -56,7 +56,7 @@ function loadCosWave()
            -2.5 0.]
     P = Zonotope([0., 1.5], [[0.0; 0.05]])
 
-    constraint = LazySets.HalfSpace([0., 1.], -1.8)
+    constraint = LazySets.HalfSpace([0., 1.], -1.6)
     T = [0, 8]
     dimToPlot = 2
     return A, P, constraint, T, dimToPlot
