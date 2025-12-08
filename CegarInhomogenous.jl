@@ -370,7 +370,7 @@ end
 
 function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
     stepsBeforeReduce = 10
-    maxOrder = 100
+    maxOrder = 200
     XG = copy(genmat(X0))
     XDim, p = size(XG)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
@@ -386,6 +386,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
 
     constraintProjVectors = map(x -> x.a / norm(x.a), constraint)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)
+    println(constraintProjVectors)
     println(constraintProjBounds)
 
 
@@ -403,7 +404,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         d = m
         dia :: Matrix{Float64} = diagm(ones(XDim))
         
-        if !(ρ(U.center, U) < norm(U.center)) #Origin is *not* in input
+        if !(zeros(XDim) ∈ U) #(ρ(-U.center, U) < norm(U.center)) #Origin is *not* in input
             println("Vi er her")
             û = copy(U.center)
             invA = inv(Matrix(A))
@@ -427,10 +428,10 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             while d < initialTimeStep
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
+                #=if order(P) > maxOrder 
                     println("REDUCE!")
                     P = reduce_order(P, maxOrder / 2)
-                end
+                end=#
                 
                 #=P̂ = invA * (ϕ - dia) * û
                 lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
@@ -500,9 +501,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
 
     #STEPS = ceil(Integer, endtime / initialTimeStep) + 1
     V :: Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
-
+    #println(V.center)
     #S ::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
-    Sρ = map(x -> 0.0, constraintProjVectors) #map(x -> ρ(x, V), constraintProjVectors)
+    Sρ = zeros(Float64, length(constraint)) #map(x -> 0.0, constraintProjVectors) #map(x -> ρ(x, V), constraintProjVectors)
     newR :: Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
     i = 1
 
@@ -532,22 +533,37 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         =#
         while !approveFlag
             if currentTimeStep < m
+                V = linear_map(Φ, copy(inputDiscritezationDict[m]))
+                println("centerH: ", newRR.center)
+                println("dotH: ", map(x -> dot(newRR.center, x), constraintProjVectors))
+                println("mapH: ", map(x -> ρ(x, Zonotope(zeros(XDim), genmat(newRR))), constraintProjVectors))
+                println("dotI: ", map(x -> dot(V.center, x), constraintProjVectors))
+                println("mapI: ", map(x -> ρ(x, V), constraintProjVectors))                
+                println("Sρ: ", Sρ)
                 println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
                 return false
             end
 
             if changedTimeStep
                 newR = discritezationDict[currentTimeStep]
+                V = copy(inputDiscritezationDict[currentTimeStep])
                 ϕt = phiDict[currentTimeStep]
                 newRR = linear_map(Φ, newR)
+                V = linear_map(Φ, V)
             else 
                 newRR = linear_map(ϕt, newRR)
+                V = linear_map(ϕt, V)
             end
 
             changedTimeStep = false
-            V = linear_map(Φ, copy(inputDiscritezationDict[currentTimeStep]))
+            #V = linear_map(Φ, copy(inputDiscritezationDict[currentTimeStep]))
             #nsum :: Zonotope = minkowski_sum(newRR, S)
-            if reduce(&, <=(map(x -> dot(newRR.center, x), constraintProjVectors) + map(x -> ρ(x, newRR), constraintProjVectors) + Sρ + map(x -> ρ(x, V), constraintProjVectors) + map(x -> dot(V.center, x), constraintProjVectors), constraintProjBounds)) #mapreduce(c -> !intersects(nsum, c), &, constraint) 
+            hom = map(x -> ρ(x, newRR), constraintProjVectors) #map(x -> dot(newRR.center, x), constraintProjVectors) + map(x -> ρ(x, newRR), constraintProjVectors)
+            inhom = map(x -> ρ(x, V), constraintProjVectors) #map(x -> ρ(x, V), constraintProjVectors) + map(x -> dot(V.center, x), constraintProjVectors)
+            #=println("hom: ", hom)
+            println("inhom: ", inhom)
+            println("Sρ: ", Sρ)=#
+            if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds)) #mapreduce(c -> !intersects(nsum, c), &, constraint) 
                 approveFlag = true
                 Sρ += map(x -> ρ(x, V), constraintProjVectors) + map(x -> dot(V.center, x), constraintProjVectors)
                 mul!(tempM, Φ, ϕt)
