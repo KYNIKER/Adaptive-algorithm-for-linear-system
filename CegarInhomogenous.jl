@@ -194,8 +194,9 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             while d < initialTimeStep
                 #inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if div(size(genmat(P))...) > maxOrder
-                    P = PCA_reduce(P)
+                if order(P) > maxOrder 
+                    println("REDUCE!")
+                    P = reduce_order(P, maxOrder / 2)
                 end
                 
                 #=P̂ = invA * (ϕ - dia) * û
@@ -235,8 +236,9 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             while d < initialTimeStep
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if i % (stepsBeforeReduce * 2) == 0
-                    P = PCA_reduce(P)
+                if order(P) > maxOrder 
+                    println("REDUCE!")
+                    P = reduce_order(P, maxOrder / 2)
                 end
                 i += 1
                 
@@ -289,8 +291,9 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
             V = linear_map(initialϕ, V)            
             S = minkowski_sum(S, V)
-            if i % stepsBeforeReduce == 0
-                S = PCA_reduce(S)
+            if order(P) > maxOrder 
+                println("REDUCE!")
+                P = reduce_order(P, maxOrder / 2)
             end
         end
 
@@ -367,7 +370,7 @@ end
 
 function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
     stepsBeforeReduce = 10
-    maxOrder = 40
+    maxOrder = 50
     XG = copy(genmat(X0))
     XDim, p = size(XG)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
@@ -417,7 +420,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
                 P = minkowski_sum(P, linear_map(ϕ, P))
                 if order(P) > maxOrder 
                     println("REDUCE!")
-                    P = reduce_order(P, 1)
+                    P = reduce_order(P, maxOrder / 2)
                 end
                 
                 #=P̂ = invA * (ϕ - dia) * û
@@ -461,8 +464,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             while d < initialTimeStep
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if i % (stepsBeforeReduce * 2) == 0
-                    P = PCA_reduce(P)
+                if order(P) > maxOrder 
+                    println("REDUCE!")
+                    P = reduce_order(P, maxOrder / 2)
                 end
                 i += 1
                 
@@ -506,11 +510,11 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         approveFlag = false
 
         if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
-            println(time)
+            #println(time)
             V = concretize(linear_map(initialϕ, V))
             S = concretize(minkowski_sum(S, V))
             if order(S) > maxOrder
-                println("REDUCE!")
+                #println("REDUCE!")
                 S = reduce_order(S, 2)
             end
         end
