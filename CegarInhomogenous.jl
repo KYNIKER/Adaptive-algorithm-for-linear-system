@@ -428,10 +428,10 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             while d < initialTimeStep
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                #=if order(P) > maxOrder 
+                if order(P) > maxOrder 
                     println("REDUCE!")
-                    P = reduce_order(P, maxOrder / 2)
-                end=#
+                    P = reduce_order(P, 1)
+                end
                 
                 #=P̂ = invA * (ϕ - dia) * û
                 lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
@@ -465,9 +465,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             end=#
             inputDiscritezationDict[initialTimeStep] = P
         else
-            dU = box_approximation_symmetric(d * U)
+            dU = overapproximate(d * U, Zonotope)
             P = minkowski_sum(dU, E_ψ(U, d, A))
-            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), dU))
             rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
             f = concretize(minkowski_sum(lt, rt))
             disc = overapproximate(CH(X0, f), Zonotope)
@@ -476,7 +476,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
                 P = minkowski_sum(P, linear_map(ϕ, P))
                 if order(P) > maxOrder 
                     println("REDUCE!")
-                    P = reduce_order(P, maxOrder / 2)
+                    P = reduce_order(P, 1)
                 end
                 
                 
