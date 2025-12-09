@@ -16,11 +16,11 @@ include("models/MNA5/mna5_load.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.001
-const STRATEGY = 1
+const STRATEGY = 0
 
-initialTimeStep = 0.0005
+initialTimeStep = 0.005
 #strategy = 1
-Digits = 5
+Digits = 4
 reuse = true
 plotConstraint = true
 input = true
@@ -54,7 +54,7 @@ constraint = isa(constraint, Array) ? constraint : [constraint]
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegarInput(A, initialTimeStep, T, P₁, constraint, μ, strategy, digits, reuse)
 println("initialTimeStep: ", initialTimeStep)
 #boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
-#@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+#@time boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits)
 
 #sent = OneTimeStepSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 res = cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)

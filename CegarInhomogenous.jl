@@ -1,4 +1,4 @@
-using LazySets, LinearAlgebra, Printf, FastExpm#, Polyhedra#, CDDLib
+using LazySets, LinearAlgebra, Printf, FastExpm, Polyhedra, CDDLib
 
 include("helperfunctions.jl")
 include("reductionMethods.jl")
@@ -409,16 +409,16 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             û = copy(U.center)
             invA = inv(Matrix(A))
             Ut = Zonotope(U.center - û, genmat(U))
-            dU = box_approximation_symmetric(d * Ut)
+            dU = overapproximate(d * Ut, Zonotope)
             P = minkowski_sum(dU, E_ψ(Ut, d, A))
             #println(typeof(P))
             #P = PCA_reduce(P)
 
             P̂ = invA * (ϕ - dia) * û
-            lt = minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut))
+            lt = minkowski_sum(convert(Zonotope, ϕ * X0), dU)
             rt = minkowski_sum(E_ψ(Ut, d, A), E⁺(X0, d, A))
             PZ = Zonotope(P̂, zeros(Float64, size(U.center, 1), 1))
-            f = minkowski_sum(lt, rt)
+            f = minkowski_sum(lt, rt) #linear_map(ϕ, X0) ⊕ P ⊕ E⁺(X0, d, A) 
             disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)
             lt = missing
             rt = missing
