@@ -250,9 +250,9 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
                 d = d * 2
             end
 
-            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
-            rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
-            disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
+            # lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+            # rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+            # disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
             discritezationDict[d] = copy(disc)
             phiDict[d] = copy(ϕ)
             inputDiscritezationDict[initialTimeStep] = P
@@ -289,7 +289,7 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         
         approveFlag = false
 
-        if ceil(integer, (time + currentTimeStep) > inputStepsCounter * initialTimeStep)
+        if ceil(Integer, (time + currentTimeStep) > inputStepsCounter * initialTimeStep)
             inputStepsCounter += 1
             V = linear_map(initialϕ, V)            
             S = minkowski_sum(S, V)
@@ -479,10 +479,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
                 copy!(ϕ, tempM)
                 d = d * 2
             end
-
-            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
-            rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
-            disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
+            # lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+            # rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+            # disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
             discritezationDict[d] = copy(disc)
             phiDict[d] = copy(ϕ)
             inputDiscritezationDict[initialTimeStep] = FirstOrderZonotope(P)
