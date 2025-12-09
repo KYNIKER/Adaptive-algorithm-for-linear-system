@@ -9,9 +9,9 @@ Based on "Efficient Computation of Reachable Sets of Linear Time-Invariant Syste
 # System description
 Given a LTI system: x' = Ax + Bu(t)
 """
-function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer) where {N}
+function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
     stepsBeforeReduce = 4
-    maxOrder = 1
+    maxOrder = 10
     ANorm = norm(A, Inf)
     XNorm = norm(X0, Inf)::Float64
     XG = copy(genmat(X0))
@@ -196,7 +196,7 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
                 P = minkowski_sum(P, linear_map(ϕ, P))
                 if order(P) > maxOrder 
                     println("REDUCE!")
-                    P = reduce_order(P, maxOrder / 2)
+                    P = reduce_order(P, ceil(Integer, maxOrder / 2))
                 end
                 
                 #=P̂ = invA * (ϕ - dia) * û
@@ -240,7 +240,7 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
                     println("REDUCE!")
                     P = reduce_order(P, maxOrder / 2)
                 end
-                i += 1
+                # i += 1
                 
                 phiDict[d] = copy(ϕ)
                 discritezationDict[d] = copy(disc)
@@ -267,6 +267,7 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
     S ::Zonotope{N,Vector{N},Matrix{N}} = inputDiscritezationDict[initialTimeStep]
     newR :: Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
     i = 1
+    inputStepsCounter = 0
 
 
     Φ :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
@@ -288,12 +289,13 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         
         approveFlag = false
 
-        if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
+        if ceil(integer, (time + currentTimeStep) > inputStepsCounter * initialTimeStep)
+            inputStepsCounter += 1
             V = linear_map(initialϕ, V)            
             S = minkowski_sum(S, V)
-            if order(P) > maxOrder 
+            if order(S) > maxOrder 
                 println("REDUCE!")
-                P = reduce_order(P, maxOrder / 2)
+                S = reduce_order(S, maxOrder / 2)
             end
         end
 
@@ -495,6 +497,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
     S ::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
     newR :: Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
     i = 1
+    inputStepsCounter = 0
 
 
     Φ :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
@@ -509,8 +512,10 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         
         approveFlag = false
 
-        if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
+        #if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
+        if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > inputStepsCounter * initialTimeStep
             #println(time)
+            inputStepsCounter += 1
             V = concretize(linear_map(initialϕ, V))
             S = concretize(minkowski_sum(S, V))
             if order(S) > maxOrder

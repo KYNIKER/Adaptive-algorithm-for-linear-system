@@ -38,7 +38,7 @@ U :: Zonotope = BallInf([0.0], 0.0)
 
 constraint = isa(constraint, Array) ? constraint : [constraint]
 
-boxes1, timesteps1, attemptsRecorder1 = cegarInputSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits)
+boxes1, timesteps1, attemptsRecorder1 = cegarInputSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
 shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
 
 #println("Finished simulations")
