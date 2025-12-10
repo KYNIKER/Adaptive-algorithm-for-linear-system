@@ -54,12 +54,12 @@ p = plot(dpi=300, thickness_scaling=1, ylims=(minVal, maxVal), xlims=(0, maximum
 
 
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], vars=(1,0), c=:forestgreen, alpha=:0.2,
+    plot!(p, shapes1[i], vars=(1,0), c=:black, alpha= i == 1 ? 0.6 : 0.2,
         label = i == 1 ? "ReACT with Dict Tech" : "")
 end
 
 for i in eachindex(shapes2)
-    plot!(p, shapes2[i], vars=(1,0), c=:blue, alpha=:0.2,
+    plot!(p, shapes2[i], vars=(1,0), c=:forestgreen, alpha= i == 1 ? 0.6 : 0.2,
         label = i == 1 ? "ReACT without Dict Tech" : "")
 end
 
