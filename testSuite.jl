@@ -26,6 +26,7 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     # Actual run
     GC.gc()# Force garbage collection
     A, B, ballβ, P₁, T, constraint, _ = load_func() # load
+
     b = @benchmarkable _ = cegarInputSystemNoOutput($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits, $STRATEGY)
 
     tune!(b) # Tune to find the optimal samples/evals
@@ -37,11 +38,13 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
         push!(timeList, timeVal / 1e9)
     end
 
-    # Run once to find if Successful
-    isSuccess = cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+    # Get timesteps
+    _, timesteps, _ = cegarInputSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 
+    isSuccess = sum(timesteps, dims=1) >= T# Check if we reach the end
+    uniqueTimesteps = unique(timesteps)
     # Write to csv file
-    df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(timeList), medianTime = median(timeList), success = isSuccess, memory = y.memory, allocs = y.allocs)
+    df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(timeList), medianTime = median(timeList), success = isSuccess, memory = y.memory, allocs = y.allocs, timesteps = [uniqueTimesteps])
 
     filename = "results/" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
@@ -58,7 +61,7 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
 end
 
 #runBenchmark("FOM", 0.5, 5, load_fom, 2)
-runBenchmark("building", 0.5, 3, load_building, 2)
+#runBenchmark("building", 0.1, 6, load_building, 2)
 
 
 
