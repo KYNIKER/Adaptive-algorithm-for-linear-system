@@ -13,11 +13,11 @@ include("models/MNA1/mna1_load.jl")
 include("models/MNA5/mna5_load.jl")
 
 # Timestep size
-δ = 0.001
+δ = 0.0001
 
 # System description
 A, B, ballβ, P₁, time, constraint, dimToPlot = load_beam()
-t = 14.0 #maximum(time)
+t = 20.0 #maximum(time)
 n = size(A, 1)
 println(n)
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)

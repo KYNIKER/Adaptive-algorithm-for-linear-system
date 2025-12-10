@@ -18,9 +18,9 @@ include("CegarInhomogenous.jl")
 const μ = 0.001
 const STRATEGY = 0
 
-initialTimeStep = 0.005
+initialTimeStep = 0.001
 #strategy = 1
-Digits = 4
+Digits = 5
 reuse = true
 plotConstraint = true
 input = true
