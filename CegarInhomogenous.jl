@@ -302,7 +302,7 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         
         approveFlag = false
 
-        if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > inputStepsCounter * initialTimeStep
+        if (time + currentTimeStep) > inputStepsCounter * initialTimeStep
             #println(time)
             inputStepsCounter += 1
             V = linear_map(initialϕ, V)            
@@ -532,7 +532,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         approveFlag = false
 
         #if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
-        if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > inputStepsCounter * initialTimeStep
+        if (time + currentTimeStep) > inputStepsCounter * initialTimeStep
             #println(time)
             inputStepsCounter += 1
             V = concretize(linear_map(initialϕ, V))
