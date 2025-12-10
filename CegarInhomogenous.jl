@@ -12,6 +12,9 @@ Given a LTI system: x' = Ax + Bu(t)
 function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
     stepsBeforeReduce = 4
     maxOrder = 50
+    reduceToOrder = 1
+    finalReduce = maxOrder # We reduce the final P to this
+
     ANorm = norm(A, Inf)
     XNorm = norm(X0, Inf)::Float64
     XG = copy(genmat(X0))
@@ -177,8 +180,8 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         dia :: Matrix{Float64} = diagm(ones(XDim))
         
         if !(ρ(U.center, U) < norm(U.center)) #Origin is *not* in input
-            println("Vi er her")
-            println(d)
+            println("Origin is not in input...")
+            #println(d)
             û = copy(U.center)
             invA = inv(Matrix(A))
             Ut = Zonotope(U.center - û, genmat(U))
@@ -197,9 +200,9 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             while d < initialTimeStep
                 #inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
-                    println("REDUCE!")
-                    P = reduce_order(P, 1)
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
+                    P = reduce_order(P, reduceToOrder)
                 end
                 
                 #=P̂ = invA * (ϕ - dia) * û
@@ -228,9 +231,9 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             phiDict[d] = copy(ϕ)
             #dU = box_approximation_symmetric(initialTimeStep * Ut)
             #P = minkowski_sum(dU, E_ψ(Ut, initialTimeStep, A))
-            if order(P) > maxOrder
-                println("REDUCE!")
-                P = reduce_order(P, 1)
+            if LazySets.order(P) > finalReduce
+                #println("REDUCE!")
+                P = reduce_order(P, finalReduce)
             end
             inputDiscritezationDict[initialTimeStep] = P
         else
@@ -243,9 +246,9 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             while d < initialTimeStep
                 #inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
-                    println("REDUCE!")
-                    P = reduce_order(P, 1)
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
+                    P = reduce_order(P, reduceToOrder)
                 end
                 
                 
@@ -261,9 +264,9 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             # disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
             discritezationDict[d] = copy(disc)
             phiDict[d] = copy(ϕ)
-            if order(P) > maxOrder
-                println("REDUCE!")
-                P = reduce_order(P, 1)
+            if LazySets.order(P) > finalReduce
+                #println("REDUCE!")
+                P = reduce_order(P, finalReduce)
             end
             inputDiscritezationDict[initialTimeStep] = P
         end
@@ -300,13 +303,13 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         approveFlag = false
 
         if ceil(Integer, (time + currentTimeStep) > inputStepsCounter * initialTimeStep)
-            println(time)
+            #println(time)
             inputStepsCounter += 1
             V = linear_map(initialϕ, V)            
             S = minkowski_sum(S, V)
-            if order(S) > maxOrder 
-                println("REDUCE!")
-                S = reduce_order(S, 1)
+            if LazySets.order(S) > maxOrder 
+                #println("REDUCE!")
+                S = reduce_order(S, reduceToOrder)
             end
         end
 
@@ -384,6 +387,9 @@ end
 function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
     stepsBeforeReduce = 10
     maxOrder = 50
+    reduceToOrder = 1
+    finalReduce = maxOrder # We reduce the final P to this
+
     XG = copy(genmat(X0))
     XDim, p = size(XG)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
@@ -412,7 +418,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         dia :: Matrix{Float64} = diagm(ones(XDim))
         
         if !(ρ(U.center, U) < norm(U.center)) #Origin is *not* in input
-            println("Vi er her")
+            println("Origin is not in input...")
             û = copy(U.center)
             invA = inv(Matrix(A))
             Ut = Zonotope(U.center - û, genmat(U))
@@ -431,9 +437,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             while d < initialTimeStep
                 #inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
-                    println("REDUCE!")
-                    P = reduce_order(P, 1)
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
+                    P = reduce_order(P, reduceToOrder)
                 end
                 
                 #=P̂ = invA * (ϕ - dia) * û
@@ -462,9 +468,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             phiDict[d] = copy(ϕ)
             #dU = box_approximation_symmetric(initialTimeStep * Ut)
             #P = minkowski_sum(dU, E_ψ(Ut, initialTimeStep, A))
-            if order(P) > maxOrder
-                println("REDUCE!")
-                P = reduce_order(P, 1)
+            if LazySets.order(P) > finalReduce
+                #println("REDUCE!")
+                P = reduce_order(P, finalReduce)
             end
             inputDiscritezationDict[initialTimeStep] = P
         else
@@ -477,9 +483,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             while d < initialTimeStep
                 #inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
-                    println("REDUCE!")
-                    P = reduce_order(P, 1)
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
+                    P = reduce_order(P, reduceToOrder)
                 end
                 
                 phiDict[d] = copy(ϕ)
@@ -494,9 +500,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             # disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)
             discritezationDict[d] = copy(disc)
             phiDict[d] = copy(ϕ)
-            if order(P) > maxOrder
-                println("REDUCE!")
-                P = reduce_order(P, 1)
+            if LazySets.order(P) > finalReduce
+                #println("REDUCE!")
+                P = reduce_order(P, finalReduce)
             end
             inputDiscritezationDict[initialTimeStep] = P
         end
@@ -527,13 +533,13 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
 
         #if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
         if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > inputStepsCounter * initialTimeStep
-            println(time)
+            #println(time)
             inputStepsCounter += 1
             V = concretize(linear_map(initialϕ, V))
             S = concretize(minkowski_sum(S, V))
-            if order(S) > maxOrder
-                println("REDUCE!")
-                S = reduce_order(S, 1)
+            if LazySets.order(S) > maxOrder
+                #println("REDUCE!")
+                S = reduce_order(S, reduceToOrder)
             end
         end
 
