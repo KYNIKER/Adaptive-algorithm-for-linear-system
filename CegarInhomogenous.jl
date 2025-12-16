@@ -370,12 +370,12 @@ end
 
 function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
     stepsBeforeReduce = 10
-    maxOrder = 40
+    maxOrder = 50
     XG = copy(genmat(X0))
     XDim, p = size(XG)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
-
+    println("m: ", m)
     elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
     phiDict = Dict{Float64,  Matrix{Float64}}()
     sizehint!(phiDict, elems)
@@ -384,9 +384,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
     inputDiscritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
     sizehint!(inputDiscritezationDict, elems)
 
-    constraintProjVectors = map(x -> x.a / norm(x.a), constraint)
+    constraintProjVectors = map(x -> x.a, constraint)#map(x -> x.a / norm(x.a), constraint)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)
-    println(constraintProjVectors)
+    println(unique(only(constraintProjVectors)))
     println(constraintProjBounds)
 
 
@@ -405,7 +405,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         dia :: Matrix{Float64} = diagm(ones(XDim))
         
         if !(zeros(XDim) ∈ U) #(ρ(-U.center, U) < norm(U.center)) #Origin is *not* in input
-            println("Vi er her")
+            println("Origin is not in input...")
             û = copy(U.center)
             invA = inv(Matrix(A))
             Ut = Zonotope(U.center - û, genmat(U))
@@ -465,6 +465,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             end=#
             inputDiscritezationDict[initialTimeStep] = P
         else
+            println("Origin is in input.")
             dU = overapproximate(d * U, Zonotope)
             P = minkowski_sum(dU, E_ψ(U, d, A))
             lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), dU))
@@ -534,7 +535,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         while !approveFlag
             if currentTimeStep < m
                 V = linear_map(Φ, copy(inputDiscritezationDict[m]))
-                println("centerH: ", newRR.center)
+                println("centerH: ", unique(newRR.center))
                 println("dotH: ", map(x -> dot(newRR.center, x), constraintProjVectors))
                 println("mapH: ", map(x -> ρ(x, Zonotope(zeros(XDim), genmat(newRR))), constraintProjVectors))
                 println("dotI: ", map(x -> dot(V.center, x), constraintProjVectors))
