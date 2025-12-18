@@ -22,6 +22,8 @@ include("CegarInhomogenous.jl")
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
 function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     println("Running benchmark for: ", name)
+    BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 50
 
     # Actual run
     GC.gc()# Force garbage collection
@@ -29,8 +31,9 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
 
     b = @benchmarkable _ = cegarInputSystemNoOutput($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits, $STRATEGY)
 
-    tune!(b) # Tune to find the optimal samples/evals
-    y = run(b)
+    #tune!(b; verbose=true) # Tune to find the optimal samples/evals
+    println("tuned!")
+    y = run(b; verbose=true)
 
     # Convert time to seconds from nanoseconds
     timeList = []
@@ -39,7 +42,7 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     end
 
     # Get timesteps
-    _, timesteps, _ = cegarInputSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+    timesteps = cegarInputSystemOnlyTiming(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 
     isSuccess = sum(timesteps, dims=1) >= T# Check if we reach the end
     uniqueTimesteps = unique(timesteps)
@@ -61,8 +64,12 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
 end
 
 #runBenchmark("FOM", 0.5, 5, load_fom, 2)
-#runBenchmark("building", 0.1, 6, load_building, 2)
-
-
-
-
+modelname = "mna5"
+model = load_mna5
+dig = 1
+#runBenchmark(modelname, 1.0, dig, model, 2)
+#GC.gc()
+runBenchmark(modelname, 1.0, dig, model, 1)
+GC.gc()
+#runBenchmark(modelname, 0.0025, dig, model, 0)
+#GC.gc()
