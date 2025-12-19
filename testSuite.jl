@@ -22,28 +22,34 @@ include("CegarInhomogenous.jl")
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
 function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     println("Running benchmark for: ", name)
+    BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 50
 
     # Actual run
     GC.gc()# Force garbage collection
     A, B, ballβ, P₁, T, constraint, _ = load_func() # load
+
     b = @benchmarkable _ = cegarInputSystemNoOutput($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits, $STRATEGY)
 
-    tune!(b) # Tune to find the optimal samples/evals
-    y = run(b)
-
+    #tune!(b; verbose=true) # Tune to find the optimal samples/evals
+    #println("tuned!")
+    y = run(b; verbose=true)
+    println("Run completed.")
     # Convert time to seconds from nanoseconds
     timeList = []
     for timeVal in y.times
         push!(timeList, timeVal / 1e9)
     end
 
-    # Run once to find if Successful
-    isSuccess = cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+    # Get timesteps
+    timesteps = cegarInputSystemOnlyTiming(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 
+    isSuccess = sum(timesteps, dims=1) >= T# Check if we reach the end
+    uniqueTimesteps = unique(timesteps)
     # Write to csv file
-    df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(timeList), medianTime = median(timeList), success = isSuccess, memory = y.memory, allocs = y.allocs)
+    df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(timeList), medianTime = median(timeList), success = isSuccess, memory = y.memory, allocs = y.allocs, timesteps = [uniqueTimesteps])
 
-    filename = "results/" * name * "Results" * ".csv"
+    filename = "results/" * name * "ResultsNewMethod" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim = ";", append=true)
@@ -58,8 +64,24 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
 end
 
 #runBenchmark("FOM", 0.5, 5, load_fom, 2)
-runBenchmark("building", 0.5, 3, load_building, 2)
-
-
-
-
+#=modelname = "heat"
+model = load_heat_input
+dig = 1=#
+runBenchmark("motor", 1.0, 3, load_motor, 1)
+GC.gc()
+runBenchmark("building", 1.0, 3, load_building, 1)
+GC.gc()
+runBenchmark("pde", 1.0, 3, load_pde, 1)
+GC.gc()
+runBenchmark("heatInput", 1.0, 4, load_heat_input, 1)
+GC.gc()
+runBenchmark("ISS", 0.05, 3, load_iss, 1)
+GC.gc()
+runBenchmark("beam", 0.0025, 4, load_beam, 1)
+GC.gc()
+runBenchmark("mna1", 1.0, 4, load_mna1, 1)
+GC.gc()
+runBenchmark("mna5", 1.0, 1, load_mna5, 1)
+GC.gc()
+#runBenchmark(modelname, 0.0025, dig, model, 0)
+#GC.gc()

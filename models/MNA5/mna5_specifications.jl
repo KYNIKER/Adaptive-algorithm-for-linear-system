@@ -6,8 +6,7 @@ function mna5_specification()
                         high=[fill(0.00025, 10); zeros(10903)])
 
     # property: x1 ≤ 0.2 && x2 ≤ 0.15
-    property = HPolyhedron([HalfSpace(sparsevec([1], [1.0], 10913), 0.2),
-                                            HalfSpace(sparsevec([2], [1.0], 10913), 0.15)])
+    property = [LazySets.HalfSpace(sparsevec([1], [1.0], 10913), 0.2), LazySets.HalfSpace(sparsevec([2], [1.0], 10913), 0.15)]
 
     # time horizon: 20 time units
     time_horizon = 20.0

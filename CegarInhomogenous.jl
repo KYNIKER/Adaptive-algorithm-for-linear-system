@@ -119,7 +119,7 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             P = minkowski_sum(dU, E_ψ(U, d, A))#minkowski_sum(U, linear_map(ϕ, U))
             #disc :: Zonotope{N,Vector{N},Matrix{N}} = copy(X0)
             while d < initialTimeStep
-                println("d: ", d)
+                #println("d: ", d)
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
                 if i % stepsBeforeReduce == 0
@@ -177,7 +177,7 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         dia :: Matrix{Float64} = diagm(ones(XDim))
         
         if !(zeros(size(U.center)) ∈ U) #Origin is *not* in input
-            println("Vi er her")
+            #println("Vi er her")
             û = copy(U.center)
             invA = inv(Matrix(A))
             Ut = Zonotope(U.center - û, genmat(U))
@@ -194,8 +194,8 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             while d < initialTimeStep
                 #inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
-                    println("REDUCE!")
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
                     P = reduce_order(P, maxOrder / 2)
                 end
                 
@@ -236,8 +236,8 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             while d < initialTimeStep
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
-                    println("REDUCE!")
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
                     P = reduce_order(P, maxOrder / 2)
                 end
                 i += 1
@@ -259,7 +259,7 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         end
     end
 
-    println("Dicts done!")
+    #println("Dicts done!")
 
     STEPS = ceil(Integer, endtime / initialTimeStep) + 1
     V :: Zonotope{N,Vector{N},Matrix{N}} = inputDiscritezationDict[initialTimeStep]
@@ -291,15 +291,15 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
             V = linear_map(initialϕ, V)            
             S = minkowski_sum(S, V)
-            if order(S) > maxOrder 
-                println("REDUCE!")
+            if LazySets.order(S) > maxOrder 
+                #println("REDUCE!")
                 S = reduce_order(S, maxOrder / 2)
             end
         end
 
         while !approveFlag
             if currentTimeStep < m
-                println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
+                #println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
                 return (tubes, timeStepRecorder, attemptsRecorder)
             end
 
@@ -375,7 +375,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
     XDim, p = size(XG)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
-    println("m: ", m)
+    #println("m: ", m)
     elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
     phiDict = Dict{Float64,  Matrix{Float64}}()
     sizehint!(phiDict, elems)
@@ -386,8 +386,8 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
 
     constraintProjVectors = map(x -> x.a, constraint)#map(x -> x.a / norm(x.a), constraint)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)
-    println(unique(only(constraintProjVectors)))
-    println(constraintProjBounds)
+    #println(unique(only(constraintProjVectors)))
+    #println(constraintProjBounds)
 
 
     time::Float64 = minimum(interval)
@@ -405,7 +405,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         dia :: Matrix{Float64} = diagm(ones(XDim))
         
         if !(zeros(XDim) ∈ U) #(ρ(-U.center, U) < norm(U.center)) #Origin is *not* in input
-            println("Origin is not in input...")
+            #println("Origin is not in input...")
             û = copy(U.center)
             invA = inv(Matrix(A))
             Ut = Zonotope(U.center - û, genmat(U))
@@ -428,8 +428,8 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             while d < initialTimeStep
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
-                    println("REDUCE!")
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
                     P = reduce_order(P, 1)
                 end
                 
@@ -460,12 +460,12 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             #dU = box_approximation_symmetric(initialTimeStep * Ut)
             #P = minkowski_sum(dU, E_ψ(Ut, initialTimeStep, A))
             #=if order(P) > 1
-                println("REDUCE!")
+                #println("REDUCE!")
                 P = reduce_order(P, 1)
             end=#
             inputDiscritezationDict[initialTimeStep] = P
         else
-            println("Origin is in input.")
+            #println("Origin is in input.")
             dU = overapproximate(d * U, Zonotope)
             P = minkowski_sum(dU, E_ψ(U, d, A))
             lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), dU))
@@ -475,8 +475,8 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             while d < initialTimeStep
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
-                if order(P) > maxOrder 
-                    println("REDUCE!")
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
                     P = reduce_order(P, 1)
                 end
                 
@@ -498,7 +498,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         end
     end
 
-    println("Dicts done!")
+    #println("Dicts done!")
 
     #STEPS = ceil(Integer, endtime / initialTimeStep) + 1
     V :: Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
@@ -520,9 +520,9 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         attempts = 1
         
         approveFlag = false
-        println(time)
+        #println(time)
         #=if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
-            println(time)
+            #println(time)
             V = linear_map(initialϕ, V)
             #S = concretize(minkowski_sum(S, V))
             Sρ += map(x -> ρ(x, V), constraintProjVectors)
@@ -535,13 +535,13 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         while !approveFlag
             if currentTimeStep < m
                 V = linear_map(Φ, copy(inputDiscritezationDict[m]))
-                println("centerH: ", unique(newRR.center))
-                println("dotH: ", map(x -> dot(newRR.center, x), constraintProjVectors))
-                println("mapH: ", map(x -> ρ(x, Zonotope(zeros(XDim), genmat(newRR))), constraintProjVectors))
-                println("dotI: ", map(x -> dot(V.center, x), constraintProjVectors))
-                println("mapI: ", map(x -> ρ(x, V), constraintProjVectors))                
-                println("Sρ: ", Sρ)
-                println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
+                #println("centerH: ", unique(newRR.center))
+                #println("dotH: ", map(x -> dot(newRR.center, x), constraintProjVectors))
+                #println("mapH: ", map(x -> ρ(x, Zonotope(zeros(XDim), genmat(newRR))), constraintProjVectors))
+                #println("dotI: ", map(x -> dot(V.center, x), constraintProjVectors))
+                #println("mapI: ", map(x -> ρ(x, V), constraintProjVectors))                
+                #println("Sρ: ", Sρ)
+                #println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
                 return false
             end
 
@@ -562,8 +562,8 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             hom = map(x -> ρ(x, newRR), constraintProjVectors) #map(x -> dot(newRR.center, x), constraintProjVectors) + map(x -> ρ(x, newRR), constraintProjVectors)
             inhom = map(x -> ρ(x, V), constraintProjVectors) #map(x -> ρ(x, V), constraintProjVectors) + map(x -> dot(V.center, x), constraintProjVectors)
             #=println("hom: ", hom)
-            println("inhom: ", inhom)
-            println("Sρ: ", Sρ)=#
+            #println("inhom: ", inhom)
+            #println("Sρ: ", Sρ)=#
             if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds)) #mapreduce(c -> !intersects(nsum, c), &, constraint) 
                 approveFlag = true
                 Sρ += map(x -> ρ(x, V), constraintProjVectors) + map(x -> dot(V.center, x), constraintProjVectors)
@@ -578,7 +578,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         end
 
         #=if i % 1 == 0
-            println("Time: ", time, " Attempts: ", attempts)
+            #println("Time: ", time, " Attempts: ", attempts)
         end=#
 
         #push!(R, msum)
@@ -611,7 +611,7 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
         end 
     end
 
-    println("Successful run")
+    #println("Successful run")
 
     return true
 end
@@ -646,7 +646,7 @@ function OneTimeStepSystem(A, B, timestep::Float64, interval, X0::Zonotope{N,Vec
         dia :: Matrix{Float64} = diagm(ones(XDim))
 
         while d < timestep
-            println("d: ", d)
+            #println("d: ", d)
             P = PCA_reduce(minkowski_sum(P, linear_map(ϕ, P)))
             mul!(tempM, ϕ , ϕ)
             copy!(ϕ, tempM)
@@ -664,7 +664,7 @@ function OneTimeStepSystem(A, B, timestep::Float64, interval, X0::Zonotope{N,Vec
         P = PCA_reduce(P)
     end
 
-    println("Dicts done!")
+    #println("Dicts done!")
 
     #STEPS = ceil(Integer, endtime / initialTimeStep) + 1
     V :: Zonotope{N,Vector{N},Matrix{N}} = P
@@ -704,7 +704,7 @@ function OneTimeStepSystem(A, B, timestep::Float64, interval, X0::Zonotope{N,Vec
             mul!(tempM, Φ, initialϕ)
             copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
         else # If we hit a constraint, we fail
-            println("Error model fails at time $time, constraint is not satisfied with timestep $timestep")
+            #println("Error model fails at time $time, constraint is not satisfied with timestep $timestep")
             amountOfElements = length(tubes)
             timeStepRecorder = [timestep for i in 1:amountOfElements]
             attemptsRecorder = [1 for i in 1:amountOfElements]
@@ -816,14 +816,14 @@ end
 
     while time < endtime
         #=if i% 100 == 0
-            println("Time at step $i: $time")
+            #println("Time at step $i: $time")
         end=#
         attempts = 1
         approveFlag = false
 
         while !approveFlag
             if currentTimeStep < m
-                println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
+                #println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
                 return (R, timeStepRecorder, attemptsRecorder)
             end
 
@@ -877,4 +877,580 @@ function smallStep(newR, ϕt, RC, RG) :: Zonotope
     copy!(RC, newR.center)
     mul!(RG, ϕt, genmat(newR))
     return Zonotope( ϕt * RC, RG)#
+end
+
+function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
+    stepsBeforeReduce = 10
+    maxOrder = 50
+    XG = copy(genmat(X0))
+    XDim, p = size(XG)
+    m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    changedTimeStep = true
+    #println("m: ", m)
+    elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+    phiDict = Dict{Float64,  Matrix{Float64}}()
+    sizehint!(phiDict, elems)
+    discritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(discritezationDict, elems)
+
+    constraintProjVectors = map(x -> x.a, constraint)#map(x -> x.a / norm(x.a), constraint)
+    constraintProjBounds = ρ.(constraintProjVectors, constraint)
+    #println(unique(only(constraintProjVectors)))
+    #println(constraintProjBounds)
+
+
+    time::Float64 = minimum(interval)
+    endtime::Float64 = maximum(interval)
+
+    currentTimeStep = copy(initialTimeStep)
+
+    attemptsRecorder = Integer[]
+
+    #U = concretize(B * U)
+
+    let ϕ :: Matrix{Float64} = fastExpm(A .* m; threshold=eps(Float64), nonzero_tol=eps(Float64))
+        tempM = similar(ϕ)
+        d = m
+        dia :: Matrix{Float64} = diagm(ones(XDim))
+        
+    
+        #println("Input is constant")
+        û = B
+        #invA = A \ Matrix{eltype(A)}(I, size(A)...)
+
+
+        P̂ = (A \ (ϕ - dia)) * û
+
+        PZ = Zonotope(P̂, zeros(Float64, XDim, 1))
+        f = minkowski_sum(convert(Zonotope, ϕ * X0), E⁺(X0, d, A)) #linear_map(ϕ, X0) ⊕ P ⊕ E⁺(X0, d, A) 
+        disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)
+        PZ = missing
+        f = missing
+
+        while d < initialTimeStep
+            discritezationDict[d] = disc
+            phiDict[d] = copy(ϕ)
+            disc = overapproximate(CH(disc, linear_map(ϕ, disc)), Zonotope)
+
+            mul!(tempM, ϕ , ϕ)
+            copy!(ϕ, tempM)
+            d = d * 2
+        end
+
+        discritezationDict[d] = copy(disc)
+        phiDict[d] = copy(ϕ)    
+    end
+
+    #println("Dicts done!")
+    newR :: Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
+    i = 1
+
+
+    Φ :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
+    tempM = similar(Φ)
+    ϕt = similar(Φ)
+    newRR = copy(newR)
+    initialϕ = phiDict[initialTimeStep]
+
+    while time < endtime
+
+        attempts = 1
+        
+        approveFlag = false
+        #println(time)
+        #=if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
+            #println(time)
+            V = linear_map(initialϕ, V)
+            #S = concretize(minkowski_sum(S, V))
+            Sρ += map(x -> ρ(x, V), constraintProjVectors)
+            #=if order(S) > maxOrder
+                #println("REDUCE!")
+                S = reduce_order(S, 2)
+            end=#
+        end
+        =#
+        while !approveFlag
+            if currentTimeStep < m
+                #println("dotH: ", map(x -> dot(newRR.center, x), constraintProjVectors))
+                #println("mapH: ", map(x -> ρ(x, Zonotope(zeros(XDim), genmat(newRR))), constraintProjVectors))
+                #println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
+                return false
+            end
+
+            if changedTimeStep
+                newR = discritezationDict[currentTimeStep]
+                ϕt = phiDict[currentTimeStep]
+                newRR = linear_map(Φ, newR)
+            else 
+                newRR = linear_map(ϕt, newRR)
+            end
+
+            changedTimeStep = false
+            #V = linear_map(Φ, copy(inputDiscritezationDict[currentTimeStep]))
+            #nsum :: Zonotope = minkowski_sum(newRR, S)
+            hom = map(x -> ρ(x, newRR), constraintProjVectors) #map(x -> dot(newRR.center, x), constraintProjVectors) + map(x -> ρ(x, newRR), constraintProjVectors)
+            #=println("hom: ", hom)
+            #println("inhom: ", inhom)
+            #println("Sρ: ", Sρ)=#
+            if reduce(&, <=(hom, constraintProjBounds)) #mapreduce(c -> !intersects(nsum, c), &, constraint) 
+                approveFlag = true
+                mul!(tempM, Φ, ϕt)
+                copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
+            else 
+                newR = copy(newR)
+                currentTimeStep = currentTimeStep / 2 
+                changedTimeStep = true
+                attempts = attempts + 1
+            end
+        end
+
+        #=if i % 1 == 0
+            #println("Time: ", time, " Attempts: ", attempts)
+        end=#
+
+        #push!(R, msum)
+    
+        #push!(timeStepRecorder, currentTimeStep)
+        push!(attemptsRecorder, attempts)
+        i = i + 1
+        time = time + currentTimeStep
+
+        # Reset / apply strategy
+        # Only do this if the current timestep is less than the initial
+        if STRATEGY == 0
+            # Only reduce
+        elseif STRATEGY == 1 
+            # always try double
+            if currentTimeStep < initialTimeStep
+                currentTimeStep = currentTimeStep * 2
+                changedTimeStep = true
+            end
+        elseif STRATEGY == 2
+            # If attemptsrecorder past 4 are successes, double timestep
+            if currentTimeStep < initialTimeStep
+                lowest = min(4, i-1)
+                window = @view attemptsRecorder[i-lowest:i-1]   
+                if all(window .== 1)
+                    currentTimeStep = currentTimeStep * 2
+                    changedTimeStep = true
+                end
+            end
+        end 
+    end
+
+    #println("Successful run")
+
+    return true
+end
+
+function cegarInputSystemOnlyTiming(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
+    stepsBeforeReduce = 10
+    maxOrder = 50
+    XG = copy(genmat(X0))
+    XDim, p = size(XG)
+    m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    changedTimeStep = true
+    #println("m: ", m)
+    elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+    phiDict = Dict{Float64,  Matrix{Float64}}()
+    sizehint!(phiDict, elems)
+    discritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(discritezationDict, elems)
+
+    constraintProjVectors = map(x -> x.a, constraint)#map(x -> x.a / norm(x.a), constraint)
+    constraintProjBounds = ρ.(constraintProjVectors, constraint)
+
+
+    time::Float64 = minimum(interval)
+    endtime::Float64 = maximum(interval)
+
+    currentTimeStep = copy(initialTimeStep)
+
+    attemptsRecorder = Integer[]
+    timeStepRecorder = []
+    #U = concretize(B * U)
+
+    let ϕ :: Matrix{Float64} = fastExpm(A .* m; threshold=eps(Float64), nonzero_tol=eps(Float64))
+        tempM = similar(ϕ)
+        d = m
+        dia :: Matrix{Float64} = diagm(ones(XDim))
+        
+    
+        #println("Input is constant")
+        û = B
+        invA = inv(Matrix(A))
+
+
+        P̂ = invA * (ϕ - dia) * û
+
+        PZ = Zonotope(P̂, zeros(Float64, XDim, 1))
+        f = minkowski_sum(convert(Zonotope, ϕ * X0), E⁺(X0, d, A)) #linear_map(ϕ, X0) ⊕ P ⊕ E⁺(X0, d, A) 
+        disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)
+        PZ = missing
+        f = missing
+
+        while d < initialTimeStep
+            discritezationDict[d] = disc
+            phiDict[d] = copy(ϕ)
+            disc = overapproximate(CH(disc, linear_map(ϕ, disc)), Zonotope)
+
+            mul!(tempM, ϕ , ϕ)
+            copy!(ϕ, tempM)
+            d = d * 2
+        end
+
+        discritezationDict[d] = copy(disc)
+        phiDict[d] = copy(ϕ)    
+    end
+
+    #println("Dicts done!")
+    newR :: Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
+    i = 1
+
+
+    Φ :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
+    tempM = similar(Φ)
+    ϕt = similar(Φ)
+    newRR = copy(newR)
+    initialϕ = phiDict[initialTimeStep]
+
+    while time < endtime
+
+        attempts = 1
+        
+        approveFlag = false
+        #println(time)
+        #=if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
+            #println(time)
+            V = linear_map(initialϕ, V)
+            #S = concretize(minkowski_sum(S, V))
+            Sρ += map(x -> ρ(x, V), constraintProjVectors)
+            #=if order(S) > maxOrder
+                #println("REDUCE!")
+                S = reduce_order(S, 2)
+            end=#
+        end
+        =#
+        while !approveFlag
+            if currentTimeStep < m
+                #println("dotH: ", map(x -> dot(newRR.center, x), constraintProjVectors))
+                #println("mapH: ", map(x -> ρ(x, Zonotope(zeros(XDim), genmat(newRR))), constraintProjVectors))
+                #println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
+                return timeStepRecorder
+            end
+
+            if changedTimeStep
+                newR = discritezationDict[currentTimeStep]
+                ϕt = phiDict[currentTimeStep]
+                newRR = linear_map(Φ, newR)
+            else 
+                newRR = linear_map(ϕt, newRR)
+            end
+
+            changedTimeStep = false
+            #V = linear_map(Φ, copy(inputDiscritezationDict[currentTimeStep]))
+            #nsum :: Zonotope = minkowski_sum(newRR, S)
+            hom = map(x -> ρ(x, newRR), constraintProjVectors) #map(x -> dot(newRR.center, x), constraintProjVectors) + map(x -> ρ(x, newRR), constraintProjVectors)
+            #=println("hom: ", hom)
+            #println("inhom: ", inhom)
+            #println("Sρ: ", Sρ)=#
+            if reduce(&, <=(hom, constraintProjBounds)) #mapreduce(c -> !intersects(nsum, c), &, constraint) 
+                approveFlag = true
+                mul!(tempM, Φ, ϕt)
+                copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
+            else 
+                newR = copy(newR)
+                currentTimeStep = currentTimeStep / 2 
+                changedTimeStep = true
+                attempts = attempts + 1
+            end
+        end
+
+        #=if i % 1 == 0
+            #println("Time: ", time, " Attempts: ", attempts)
+        end=#
+
+        #push!(R, msum)
+    
+        push!(timeStepRecorder, currentTimeStep)
+        timeStepRecorder = unique(timeStepRecorder)
+        push!(attemptsRecorder, attempts)
+        i = i + 1
+        time = time + currentTimeStep
+
+        # Reset / apply strategy
+        # Only do this if the current timestep is less than the initial
+        if STRATEGY == 0
+            # Only reduce
+        elseif STRATEGY == 1 
+            # always try double
+            if currentTimeStep < initialTimeStep
+                currentTimeStep = currentTimeStep * 2
+                changedTimeStep = true
+            end
+        elseif STRATEGY == 2
+            # If attemptsrecorder past 4 are successes, double timestep
+            if currentTimeStep < initialTimeStep
+                lowest = min(4, i-1)
+                window = @view attemptsRecorder[i-lowest:i-1]   
+                if all(window .== 1)
+                    currentTimeStep = currentTimeStep * 2
+                    changedTimeStep = true
+                end
+            end
+        end 
+    end
+
+    #println("Successful run")
+
+    return timeStepRecorder
+end
+
+function cegarInputSystemOnlyTiming(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
+    stepsBeforeReduce = 10
+    maxOrder = 50
+    XG = copy(genmat(X0))
+    XDim, p = size(XG)
+    m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    changedTimeStep = true
+    #println("m: ", m)
+    elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+    phiDict = Dict{Float64,  Matrix{Float64}}()
+    sizehint!(phiDict, elems)
+    discritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(discritezationDict, elems)
+    inputDiscritezationDict = Dict{Float64, Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(inputDiscritezationDict, elems)
+
+    constraintProjVectors = map(x -> x.a, constraint)#map(x -> x.a / norm(x.a), constraint)
+    constraintProjBounds = ρ.(constraintProjVectors, constraint)
+
+
+
+    time::Float64 = minimum(interval)
+    endtime::Float64 = maximum(interval)
+
+    currentTimeStep = copy(initialTimeStep)
+
+    attemptsRecorder = Integer[]
+    timeStepRecorder = []
+
+    U = concretize(B * U)
+
+    let ϕ :: Matrix{Float64} = fastExpm(A .* m; threshold=eps(Float64), nonzero_tol=eps(Float64))
+        tempM = similar(ϕ)
+        d = m
+        dia :: Matrix{Float64} = diagm(ones(XDim))
+        
+        if !(zeros(XDim) ∈ U) #(ρ(-U.center, U) < norm(U.center)) #Origin is *not* in input
+            #println("Origin is not in input...")
+            û = copy(U.center)
+            invA = inv(Matrix(A))
+            Ut = Zonotope(U.center - û, genmat(U))
+            dU = overapproximate(d * Ut, Zonotope)
+            P = minkowski_sum(dU, E_ψ(Ut, d, A))
+            #println(typeof(P))
+            #P = PCA_reduce(P)
+
+            P̂ = invA * (ϕ - dia) * û
+            lt = minkowski_sum(convert(Zonotope, ϕ * X0), dU)
+            rt = minkowski_sum(E_ψ(Ut, d, A), E⁺(X0, d, A))
+            PZ = Zonotope(P̂, zeros(Float64, size(U.center, 1), 1))
+            f = minkowski_sum(lt, rt) #linear_map(ϕ, X0) ⊕ P ⊕ E⁺(X0, d, A) 
+            disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)
+            lt = missing
+            rt = missing
+            PZ = missing
+            f = missing
+
+            while d < initialTimeStep
+                inputDiscritezationDict[d] = P
+                P = minkowski_sum(P, linear_map(ϕ, P))
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
+                    P = reduce_order(P, 1)
+                end
+                
+                #=P̂ = invA * (ϕ - dia) * û
+                lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
+                rt = concretize(minkowski_sum(E_ψ(Ut, d, A), E⁺(X0, d, A)))
+                PZ = Zonotope(P̂, zeros(Float64, size(U.center, 1), 1))
+                f = concretize(minkowski_sum(lt, rt))
+                disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)=#
+                discritezationDict[d] = disc
+                phiDict[d] = copy(ϕ)
+                disc = overapproximate(CH(disc, linear_map(ϕ, disc)), Zonotope)
+
+                mul!(tempM, ϕ , ϕ)
+                copy!(ϕ, tempM)
+                d = d * 2
+            end
+            #=P̂ = invA * (ϕ - dia) * û
+
+            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
+            rt = concretize(minkowski_sum(E_ψ(Ut, d, A), E⁺(X0, d, A)))
+            PZ = Zonotope(P̂, zeros(Float64, size(U.center, 1), 1))
+            f = concretize(minkowski_sum(lt, rt))
+            
+            disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)=#
+            discritezationDict[d] = copy(disc)
+            phiDict[d] = copy(ϕ)
+            #dU = box_approximation_symmetric(initialTimeStep * Ut)
+            #P = minkowski_sum(dU, E_ψ(Ut, initialTimeStep, A))
+            #=if order(P) > 1
+                #println("REDUCE!")
+                P = reduce_order(P, 1)
+            end=#
+            inputDiscritezationDict[initialTimeStep] = P
+        else
+            #println("Origin is in input.")
+            dU = overapproximate(d * U, Zonotope)
+            P = minkowski_sum(dU, E_ψ(U, d, A))
+            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), dU))
+            rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+            f = concretize(minkowski_sum(lt, rt))
+            disc = overapproximate(CH(X0, f), Zonotope)
+            while d < initialTimeStep
+                inputDiscritezationDict[d] = P
+                P = minkowski_sum(P, linear_map(ϕ, P))
+                if LazySets.order(P) > maxOrder 
+                    #println("REDUCE!")
+                    P = reduce_order(P, 1)
+                end
+                
+                
+                phiDict[d] = copy(ϕ)
+                discritezationDict[d] = copy(disc)
+                disc = overapproximate(CH(disc, linear_map(ϕ, disc)), Zonotope)
+                mul!(tempM, ϕ , ϕ)
+                copy!(ϕ, tempM)
+                d = d * 2
+            end
+
+            #=lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
+            rt = concretize(minkowski_sum(E_ψ(U, d, A), E⁺(X0, d, A)))
+            disc = overapproximate( CH(X0, concretize(minkowski_sum(lt, rt))), Zonotope)=#
+            discritezationDict[d] = copy(disc)
+            phiDict[d] = copy(ϕ)
+            inputDiscritezationDict[initialTimeStep] = P
+        end
+    end
+
+    #println("Dicts done!")
+
+    #STEPS = ceil(Integer, endtime / initialTimeStep) + 1
+    V :: Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
+    #println(V.center)
+    #S ::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
+    Sρ = zeros(Float64, length(constraint)) #map(x -> 0.0, constraintProjVectors) #map(x -> ρ(x, V), constraintProjVectors)
+    newR :: Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
+    i = 1
+
+
+    Φ :: Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
+    tempM = similar(Φ)
+    ϕt = similar(Φ)
+    newRR = copy(newR)
+    initialϕ = phiDict[initialTimeStep]
+
+    while time < endtime
+
+        attempts = 1
+        
+        approveFlag = false
+        #println(time)
+        #=if ceil(Integer, (time + currentTimeStep) / initialTimeStep) > ceil(Integer, time / initialTimeStep)
+            #println(time)
+            V = linear_map(initialϕ, V)
+            #S = concretize(minkowski_sum(S, V))
+            Sρ += map(x -> ρ(x, V), constraintProjVectors)
+            #=if order(S) > maxOrder
+                #println("REDUCE!")
+                S = reduce_order(S, 2)
+            end=#
+        end
+        =#
+        while !approveFlag
+            if currentTimeStep < m
+                V = linear_map(Φ, copy(inputDiscritezationDict[m]))
+                #println("centerH: ", unique(newRR.center))
+                #println("dotH: ", map(x -> dot(newRR.center, x), constraintProjVectors))
+                #println("mapH: ", map(x -> ρ(x, Zonotope(zeros(XDim), genmat(newRR))), constraintProjVectors))
+                #println("dotI: ", map(x -> dot(V.center, x), constraintProjVectors))
+                #println("mapI: ", map(x -> ρ(x, V), constraintProjVectors))                
+                #println("Sρ: ", Sρ)
+                #println("Error model fails at time $time, constraint is not satisfied after $attempts attempts")
+                return timeStepRecorder
+            end
+
+            if changedTimeStep
+                newR = discritezationDict[currentTimeStep]
+                V = copy(inputDiscritezationDict[currentTimeStep])
+                ϕt = phiDict[currentTimeStep]
+                newRR = linear_map(Φ, newR)
+                V = linear_map(Φ, V)
+            else 
+                newRR = linear_map(ϕt, newRR)
+                V = linear_map(ϕt, V)
+            end
+
+            changedTimeStep = false
+            #V = linear_map(Φ, copy(inputDiscritezationDict[currentTimeStep]))
+            #nsum :: Zonotope = minkowski_sum(newRR, S)
+            hom = map(x -> ρ(x, newRR), constraintProjVectors) #map(x -> dot(newRR.center, x), constraintProjVectors) + map(x -> ρ(x, newRR), constraintProjVectors)
+            inhom = map(x -> ρ(x, V), constraintProjVectors) #map(x -> ρ(x, V), constraintProjVectors) + map(x -> dot(V.center, x), constraintProjVectors)
+            #=println("hom: ", hom)
+            #println("inhom: ", inhom)
+            #println("Sρ: ", Sρ)=#
+            if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds)) #mapreduce(c -> !intersects(nsum, c), &, constraint) 
+                approveFlag = true
+                Sρ += map(x -> ρ(x, V), constraintProjVectors) + map(x -> dot(V.center, x), constraintProjVectors)
+                mul!(tempM, Φ, ϕt)
+                copy!(Φ, tempM) #Her kan man vente med at udregne Phi * phit indtil at man ved hvor mange gange at man vil gange phit på, så at man kan lave et mere effektivt kald på matmul(Phi, phit, phit, ...)
+            else 
+                newR = copy(newR)
+                currentTimeStep = currentTimeStep / 2 
+                changedTimeStep = true
+                attempts = attempts + 1
+            end
+        end
+
+        #=if i % 1 == 0
+            #println("Time: ", time, " Attempts: ", attempts)
+        end=#
+
+        #push!(R, msum)
+    
+        push!(timeStepRecorder, currentTimeStep)
+        timeStepRecorder = unique(timeStepRecorder)
+        push!(attemptsRecorder, attempts)
+        i = i + 1
+        time = time + currentTimeStep
+
+        # Reset / apply strategy
+        # Only do this if the current timestep is less than the initial
+        if STRATEGY == 0
+            # Only reduce
+        elseif STRATEGY == 1 
+            # always try double
+            if currentTimeStep < initialTimeStep
+                currentTimeStep = currentTimeStep * 2
+                changedTimeStep = true
+            end
+        elseif STRATEGY == 2
+            # If attemptsrecorder past 4 are successes, double timestep
+            if currentTimeStep < initialTimeStep
+                lowest = min(4, i-1)
+                window = @view attemptsRecorder[i-lowest:i-1]   
+                if all(window .== 1)
+                    currentTimeStep = currentTimeStep * 2
+                    changedTimeStep = true
+                end
+            end
+        end 
+    end
+
+    #println("Successful run")
+
+    return timeStepRecorder
 end

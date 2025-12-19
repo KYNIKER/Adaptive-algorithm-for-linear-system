@@ -16,22 +16,22 @@ include("models/MNA5/mna5_load.jl")
 include("CegarInhomogenous.jl")
 
 const μ = 0.001
-const STRATEGY = 0
+const STRATEGY = 2
 
-initialTimeStep = 0.001
+initialTimeStep = 0.1
 #strategy = 1
-Digits = 5
+Digits = 3
 reuse = true
 plotConstraint = true
 input = true
 plotOutput = false
 
 if input
-    A, B, ballβ, P₁, T, constraint, dimToPlot = load_beam()
+    A, B, ballβ, P₁, T, constraint, dimToPlot = load_iss()
     #t1 = fastExpm(A .* 1; threshold=eps(Float64), nonzero_tol=eps(Float64))
     #t2 = fastExpm(A .* 0.25; threshold=eps(Float64), nonzero_tol=eps(Float64))
     #println(unique(t1 - t2 * t2 * t2 * t2))
-    println("A invertible?", isinvertible(A))
+    #println("A invertible?", isinvertible(A))
     #=ANorm = norm(A, Inf)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
     β = (exp(ANorm*(m))-1)*norm(ballβ)/ANorm
@@ -58,7 +58,11 @@ println("initialTimeStep: ", initialTimeStep)
 
 #sent = OneTimeStepSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 res = cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
-
+println(res)
+#=if res
+    timings = cegarInputSystemOnlyTiming(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+    println(timings)
+end=#
 #=Profile.Allocs.clear()
 Profile.Allocs.@profile sample_rate=1.0 cegarInputSystemNoOutput(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 
