@@ -41,14 +41,16 @@ end
 
 function doGLGMJuliaTest(load_func, name)
     println("Running benchmark for: ", name, "...")
-    δ = 0.002
+    BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 3
+    δ = 0.0006
     GC.gc() # Force garbage collection
     A, B, ballβ, P₁, time, constraint, _ = load_func()
     t = maximum(time)
     n = size(A, 1)
 
     sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
-    alg = GLGM06(;δ=δ, approx_model=Forward())
+    alg = GLGM06(; δ=δ, approx_model=Forward())
     prob = InitialValueProblem(sys, P₁)
 
 
@@ -66,19 +68,19 @@ function doGLGMJuliaTest(load_func, name)
         push!(timeList, timeVal / 1e9)
     end
 
-    df = DataFrame(name = name, timestepsize = δ, avgTime = mean(timeList), medianTime = median(timeList), success = res)
+    df = DataFrame(name=name, timestepsize=δ, avgTime=mean(timeList), medianTime=median(timeList), success=res)
     filename = "results/" * name * "JuliaResults" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
-            CSV.write(File, df, delim = ";", append=true)
+            CSV.write(File, df, delim=";", append=true)
         end
     else
         open(filename, "w") do File
-            CSV.write(File, df, delim = ";",writeheader = true)
+            CSV.write(File, df, delim=";", writeheader=true)
         end
     end
 
     println("Finished running benchmark for: ", name, "!")
 end
 
-doGLGMJuliaTest(load_building, "building")
+doGLGMJuliaTest(load_iss, "iss")
