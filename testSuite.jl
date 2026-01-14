@@ -22,8 +22,8 @@ include("CegarInhomogenous.jl")
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
 function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     println("Running benchmark for: ", name)
-    BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
-    BenchmarkTools.DEFAULT_PARAMETERS.samples = 50
+    #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 3
 
     # Actual run
     GC.gc()# Force garbage collection
@@ -47,16 +47,16 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     isSuccess = sum(timesteps, dims=1) >= T# Check if we reach the end
     uniqueTimesteps = unique(timesteps)
     # Write to csv file
-    df = DataFrame(strategy = STRATEGY, initialTimeStep = initialTimeStep, Digits = Digits, avgTime = mean(timeList), medianTime = median(timeList), success = isSuccess, memory = y.memory, allocs = y.allocs, timesteps = [uniqueTimesteps])
+    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, Digits=Digits, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs, timesteps=[uniqueTimesteps])
 
     filename = "results/" * name * "ResultsNewMethod" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
-            CSV.write(File, df, delim = ";", append=true)
+            CSV.write(File, df, delim=";", append=true)
         end
     else
         open(filename, "w") do File
-            CSV.write(File, df, delim = ";",writeheader = true)
+            CSV.write(File, df, delim=";", writeheader=true)
         end
     end
 
@@ -67,12 +67,13 @@ end
 #=modelname = "heat"
 model = load_heat_input
 dig = 1=#
+runBenchmark("mna5", 1., 1, load_mna5, 1)
+GC.gc()#=
 runBenchmark("motor", 1.0, 3, load_motor, 1)
 GC.gc()
 runBenchmark("building", 1.0, 3, load_building, 1)
 GC.gc()
-runBenchmark("pde", 1.0, 3, load_pde, 1)
-GC.gc()
+
 runBenchmark("heatInput", 1.0, 4, load_heat_input, 1)
 GC.gc()
 runBenchmark("ISS", 0.05, 3, load_iss, 1)
@@ -84,4 +85,4 @@ GC.gc()
 runBenchmark("mna5", 1.0, 1, load_mna5, 1)
 GC.gc()
 #runBenchmark(modelname, 0.0025, dig, model, 0)
-#GC.gc()
+#GC.gc()=#
