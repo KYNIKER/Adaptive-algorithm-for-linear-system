@@ -23,7 +23,7 @@ include("CegarInhomogenous.jl")
 function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     println("Running benchmark for: ", name)
     #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
-    BenchmarkTools.DEFAULT_PARAMETERS.samples = 3
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 25
 
     # Actual run
     GC.gc()# Force garbage collection
@@ -66,17 +66,19 @@ end
 #runBenchmark("FOM", 0.5, 5, load_fom, 2)
 #=modelname = "heat"
 model = load_heat_input
-dig = 1=#
-runBenchmark("mna5", 1., 1, load_mna5, 1)
-GC.gc()#=
-runBenchmark("motor", 1.0, 3, load_motor, 1)
-GC.gc()
-runBenchmark("building", 1.0, 3, load_building, 1)
+dig = 1
+GC.gc()=#
+runBenchmark("pde", 0.5, 4, load_pde, 1)
 GC.gc()
 
-runBenchmark("heatInput", 1.0, 4, load_heat_input, 1)
+runBenchmark("motor", 0.5, 3, load_motor, 1)
 GC.gc()
-runBenchmark("ISS", 0.05, 3, load_iss, 1)
+runBenchmark("building", 0.5, 3, load_building, 1)
+GC.gc()
+
+runBenchmark("heatInput", 0.5, 4, load_heat_input, 1)
+GC.gc()
+runBenchmark("ISS", 0.1, 3, load_iss, 1)
 GC.gc()
 runBenchmark("beam", 0.0025, 4, load_beam, 1)
 GC.gc()

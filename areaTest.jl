@@ -33,12 +33,16 @@ function runAreaBenchmark(name, load_func)
     Dbounds = []
     for digit in DIGITS
         P, disc = discing(A, B, P₁, ballβ, δplus, digit)
-        push!(Pbounds, mapreduce(x -> abs.(x), +, eachcol(genmat(P))))
-        push!(Dbounds, mapreduce(x -> abs.(x), +, eachcol(genmat(disc))))
+        if P === nothing
+            push!(Pbounds, 1)
+        else
+            push!(Pbounds, mapreduce(x -> abs.(x), +, eachcol(genmat(P))))
+        end
+        push!(Dbounds, mapreduce(x -> abs.(x), +, eachcol(genmat(disc))) + disc.center)
     end
 
-    PboundsRelative = map(x -> x .\ Pbounds[1], Pbounds)
-    DboundsRelative = map(x -> x .\ Dbounds[1], Dbounds)
+    DboundsRelative = map(x -> x .\ Pbounds[1], Pbounds)
+    PboundsRelative = map(x -> x .\ Dbounds[1], Dbounds)
 
     # Write to csv file
     maxRelHom = map(x -> maximum(x), PboundsRelative)
@@ -61,7 +65,7 @@ end
 
 #runBenchmark(modelname, 1.0, dig, model, 2)
 #GC.gc()
-runAreaBenchmark("building", load_building)
+#=runAreaBenchmark("building", load_building)
 GC.gc()
 runAreaBenchmark("beam", load_beam)
 GC.gc()
@@ -75,9 +79,9 @@ runAreaBenchmark("ISS", load_iss)
 GC.gc()
 runAreaBenchmark("fom", load_fom)
 GC.gc()
-#=runAreaBenchmark("mna1", load_mna1)
-GC.gc()
-runAreaBenchmark("mna5", load_mna5)
+runAreaBenchmark("mna1", load_mna1)
 GC.gc()=#
+runAreaBenchmark("mna5", load_mna5)
+GC.gc()
 #runBenchmark(modelname, 0.0025, dig, model, 0)
 #GC.gc()
