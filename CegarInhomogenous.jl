@@ -9,10 +9,10 @@ Based on "Efficient Computation of Reachable Sets of Linear Time-Invariant Syste
 # System description
 Given a LTI system: x' = Ax + Bu(t)
 """
-function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
+function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer, maxOrder :: Integer = 50, reduceToOrder :: Integer = 1) where {N}
     stepsBeforeReduce = 4
-    maxOrder = 50
-    reduceToOrder = 1
+    # maxOrder = 50
+    # reduceToOrder = 1
     finalReduce = maxOrder # We reduce the final P to this
 
     ANorm = norm(A, Inf)
@@ -204,6 +204,11 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
                     #println("REDUCE!")
                     P = reduce_order(P, reduceToOrder)
                 end
+
+                # Check order of homogeneous part
+                if LazySets.order(disc) > maxOrder
+                    disc = reduce_order(disc, reduceToOrder)
+                end
                 
                 #=P̂ = invA * (ϕ - dia) * û
                 lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
@@ -251,6 +256,10 @@ function cegarInputSystem(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
                     P = reduce_order(P, reduceToOrder)
                 end
                 
+                # Check order of homogeneous part
+                if LazySets.order(disc) > maxOrder
+                    disc = reduce_order(disc, reduceToOrder)
+                end
                 
                 phiDict[d] = copy(ϕ)
                 discritezationDict[d] = copy(disc)
@@ -384,10 +393,10 @@ end
 
 
 
-function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
+function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer, maxOrder :: Integer = 50, reduceToOrder :: Integer = 1) where {N}
     stepsBeforeReduce = 10
-    maxOrder = 50
-    reduceToOrder = 1
+    # maxOrder = 50
+    # reduceToOrder = 1
     finalReduce = maxOrder # We reduce the final P to this
 
     XG = copy(genmat(X0))
@@ -441,6 +450,10 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
                     #println("REDUCE!")
                     P = reduce_order(P, reduceToOrder)
                 end
+                # Check order of homogeneous part
+                if LazySets.order(disc) > maxOrder
+                    disc = reduce_order(disc, reduceToOrder)
+                end
                 
                 #=P̂ = invA * (ϕ - dia) * û
                 lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
@@ -487,6 +500,11 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
                 if LazySets.order(P) > maxOrder 
                     #println("REDUCE!")
                     P = reduce_order(P, reduceToOrder)
+                end
+
+                # Check order of homogeneous part
+                if LazySets.order(disc) > maxOrder
+                    disc = reduce_order(disc, reduceToOrder)
                 end
                 
                 phiDict[d] = copy(ϕ)
@@ -855,10 +873,10 @@ function smallStep(newR, ϕt, RC, RG) :: Zonotope
     return Zonotope( ϕt * RC, RG)#
 end
 
-function cegarInputSystemOnlyTiming(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer) where {N}
+function cegarInputSystemOnlyTiming(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits :: Integer, STRATEGY :: Integer, maxOrder :: Integer = 50, reduceToOrder :: Integer = 1) where {N}
     stepsBeforeReduce = 10
-    maxOrder = 50
-    reduceToOrder = 1
+    # maxOrder = 50
+    # reduceToOrder = 1
     finalReduce = maxOrder # We reduce the final P to this
 
     XG = copy(genmat(X0))
@@ -913,6 +931,10 @@ function cegarInputSystemOnlyTiming(A, B, initialTimeStep, interval, X0::Zonotop
                     #println("REDUCE!")
                     P = reduce_order(P, reduceToOrder)
                 end
+                # Check order of homogeneous part
+                if LazySets.order(disc) > maxOrder
+                    disc = reduce_order(disc, reduceToOrder)
+                end
                 
                 #=P̂ = invA * (ϕ - dia) * û
                 lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
@@ -958,6 +980,10 @@ function cegarInputSystemOnlyTiming(A, B, initialTimeStep, interval, X0::Zonotop
                 if LazySets.order(P) > maxOrder 
                     #println("REDUCE!")
                     P = reduce_order(P, reduceToOrder)
+                end
+                # Check order of homogeneous part
+                if LazySets.order(disc) > maxOrder
+                    disc = reduce_order(disc, reduceToOrder)
                 end
                 
                 phiDict[d] = copy(ϕ)
