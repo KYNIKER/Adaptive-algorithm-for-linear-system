@@ -371,6 +371,8 @@ end
 function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits::Integer, STRATEGY::Integer) where {N}
     stepsBeforeReduce = 10
     maxOrder = 50
+    reduceOrder = 2
+
     XG = copy(genmat(X0))
     XDim, p = size(XG)
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
@@ -430,8 +432,15 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
                 P = minkowski_sum(P, linear_map(ϕ, P))
                 if LazySets.order(P) > maxOrder
                     #println("REDUCE!")
-                    P = reduce_order(P, 1)
+                    P = reduce_order(P, reduceOrder)
                 end
+                
+                # Homogenous reduction
+                if LazySets.order(disc) > maxOrder
+                    #println("REDUCE!")
+                    disc = reduce_order(disc, reduceOrder)
+                end
+
 
                 #=P̂ = invA * (ϕ - dia) * û
                 lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * Ut)))
@@ -459,10 +468,19 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
             phiDict[d] = copy(ϕ)
             #dU = box_approximation_symmetric(initialTimeStep * Ut)
             #P = minkowski_sum(dU, E_ψ(Ut, initialTimeStep, A))
-            if LazySets.order(P) > 1
+
+
+            if LazySets.order(P) > reduceOrder
                 #println("REDUCE!")
-                P = reduce_order(P, 1)
+                P = reduce_order(P, reduceOrder)
             end
+            # Homogenous reduction
+            if LazySets.order(disc) > reduceOrder
+                #println("REDUCE!")
+                disc = reduce_order(disc, reduceOrder)
+            end
+
+
             inputDiscritezationDict[initialTimeStep] = P
         else
             #println("Origin is in input.")
@@ -477,7 +495,13 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
                 P = minkowski_sum(P, linear_map(ϕ, P))
                 if LazySets.order(P) > maxOrder
                     #println("REDUCE!")
-                    P = reduce_order(P, 1)
+                    P = reduce_order(P, reduceOrder)
+                end
+
+                # Homogenous reduction
+                if LazySets.order(disc) > maxOrder
+                    #println("REDUCE!")
+                    disc = reduce_order(disc, reduceOrder)
                 end
 
 
@@ -487,6 +511,16 @@ function cegarInputSystemNoOutput(A, B, initialTimeStep, interval, X0::Zonotope{
                 mul!(tempM, ϕ, ϕ)
                 copy!(ϕ, tempM)
                 d = d * 2
+            end
+
+            if LazySets.order(P) > reduceOrder
+                #println("REDUCE!")
+                P = reduce_order(P, reduceOrder)
+            end
+            # Homogenous reduction
+            if LazySets.order(disc) > reduceOrder
+                #println("REDUCE!")
+                disc = reduce_order(disc, reduceOrder)
             end
 
             #=lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), box_approximation_symmetric(d * U)))
