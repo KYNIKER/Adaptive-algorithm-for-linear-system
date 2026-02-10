@@ -16,7 +16,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     constraintProjVectors = map(x -> x.a, constraint)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)
 
-    discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, ReachabilityAnalysis.Exponentiation.BaseExp)
+    discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder, reduceOrder)
 
     time::Float64 = minimum(interval)
     endtime::Float64 = maximum(interval)
@@ -118,7 +118,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
     sizehint!(discritezationDict, elems)
 
-    discritezationDict, _, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, ReachabilityAnalysis.Exponentiation.BaseExp)
+    discritezationDict, _, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder, reduceOrder)
 
     constraintProjVectors = map(x -> x.a, constraint)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)

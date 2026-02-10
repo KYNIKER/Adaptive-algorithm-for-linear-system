@@ -1,7 +1,7 @@
 export ReACTDiscretizeBase
 using LinearAlgebra, LazySets, ReachabilityAnalysis
 
-
+isinvertible(x) = applicable(inv, x) && isone(inv(Matrix(x)) * x)
 
 function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     XDim, _ = size(genmat(X0))
@@ -15,7 +15,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         tempM = similar(ϕ)
         d = δ⁻
         dia::Matrix{Float64} = diagm(ones(XDim))
-        isInvA = det(A) != 0.0
+        isInvA = isinvertible(A)
         Φ = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
         A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
         Φcache = sum(A) == abs(sum(A)) ? Φ : nothing
@@ -119,8 +119,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, 
         tempM = similar(ϕ)
         d = δ⁻
         dia::Matrix{Float64} = diagm(ones(XDim))
-        isInvA = false#det(A) != 0.0
-        println(isInvA)
+        isInvA = isinvertible(A)
         Φ = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
         A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
         Φcache = sum(A) == abs(sum(A)) ? Φ : nothing
