@@ -1,4 +1,4 @@
-using ReachabilityAnalysis, Plots, LazySets, BenchmarkTools, CSV, DataFrames
+using ReachabilityAnalysis, Plots, LazySets, BenchmarkTools, CSV, DataFrames, MathematicalPredicates
 
 include("models.jl")
 include("models/heat/heat_load.jl")
@@ -15,28 +15,30 @@ include("models/MNA5/mna5_load.jl")
 
 
 algCheckDict = Dict(
-    "beam" => BFFPSV18(δ = 5e-5, vars = [89], partition = [i:i for i in 1:348]),
-    "building" => BFFPSV18(δ = 2e-3, vars = [25], partition = [i:i for i in 1:48]),
-    "heat" => BFFPSV18(δ = 1e-3, vars = [133], partition = [i:i for i in 1:200]),
+    "beam" => BFFPSV18(δ=5e-5, vars=[89], partition=[i:i for i in 1:348]),
+    "building" => BFFPSV18(δ=2e-3, vars=[25], partition=[i:i for i in 1:48]),
+    "heat" => BFFPSV18(δ=1e-3, vars=[133], partition=[i:i for i in 1:200]),
 
     #"iss" => BFFPSV18(δ = 6e-4, vars = 136:270, partition = vcat([[i] for i in 1:135], [136:270]), sparse = true, lazy_initial_set = false)
-    "iss" => BFFPSV18(δ = 6e-4, vars = 136:270, partition = vcat([i:i for i in 1:135], [136:270])),
+    "iss" => BFFPSV18(δ=6e-4, vars=136:270, partition=vcat([i:i for i in 1:135], [136:270])),
     #"iss" => BFFPSV18(; δ = 6e-4, vars = 136:270, partition = [1:135, 136:270])
 
-    "motor" => BFFPSV18(δ = 1e-3, vars = [1, 5], partition = [i:i for i in 1:8]),
-    "mna1" => BFFPSV18(δ = 4e-4, vars = [1], partition = [i:i for i in 1:578]),
-    "mna5" => BFFPSV18(δ = 3e-1, vars = [1,2], partition = [i:i for i in 1:10913]),
-    "pde" => BFFPSV18(δ = 3e-4, vars = 1:84, partition = [i:i for i in 1:84])
+    "motor" => BFFPSV18(δ=1e-3, vars=[1, 5], partition=[i:i for i in 1:8]),
+    "mna1" => BFFPSV18(δ=4e-4, vars=[1], partition=[i:i for i in 1:578]),
+    "mna5" => BFFPSV18(δ=3e-1, vars=[1, 2], partition=[i:i for i in 1:10913]),
+    "pde" => BFFPSV18(δ=3e-4, vars=1:84, partition=[i:i for i in 1:84])
 )
 
 function RunCodeBFFPSV18(prob, alg, t, constraint, isSparse)
     sol = solve(prob, alg; T=t) # Running the actual time
+    #println(sol.F)
     if isSparse # Usually true
+        println("sparse")
         return mapreduce(c -> ρ(c.a.nzind, sol) <= c.b, &, constraint) # Check if hits constraint
     end
     # Typical array in case of low dimensions
     # Manually fetch indexes for each constraint
-    return mapreduce(c -> ρ(findall(c.a .== 1), sol) <= c.b, &, constraint) # Check if hits constraint
+    return mapreduce(c -> ρ([0.0, 1.0], sol.F) <= c.b, &, constraint) # Check if hits constraint
 end
 
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
@@ -98,7 +100,7 @@ for (name, load_func) in zip(names, loadFuncs)
     #doBFFPSV18JuliaTest(load_func, name)
 end
 
-doBFFPSV18JuliaTest(load_building, "building")
+#doBFFPSV18JuliaTest(load_building, "building")
 doBFFPSV18JuliaTest(load_motor, "motor")
 #doBFFPSV18JuliaTest(load_iss, "iss")
 
