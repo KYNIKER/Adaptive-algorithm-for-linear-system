@@ -1,6 +1,6 @@
 using LazySets, LinearAlgebra
 
-function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
+function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     XDim, _ = size(genmat(X0))
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
@@ -25,7 +25,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
     attemptsRecorder = Integer[]
 
 
-    discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder, reduceOrder)
+    discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
 
     for key in keys(phiDict)
         phiDict[key] = permutedims(phiDict[key])
@@ -66,7 +66,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
             if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds))
                 approveFlag = true
-                Sρ += map(x -> ρ(x, V), constraintProjVectors) + map(x -> dot(V.center, x), constraintProjVectors)
+                Sρ += inhom
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM)
             else
@@ -108,7 +108,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
     return true
 end
 
-function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
+function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     XDim, _ = size(genmat(X0))
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
@@ -132,7 +132,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
     attemptsRecorder = Integer[]
 
 
-    discritezationDict, _, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder, reduceOrder)
+    discritezationDict, _, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
 
     for key in keys(phiDict)
         phiDict[key] = permutedims(phiDict[key])
@@ -155,6 +155,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
         while !approveFlag
             if currentTimeStep < m
+
                 return false
             end
 

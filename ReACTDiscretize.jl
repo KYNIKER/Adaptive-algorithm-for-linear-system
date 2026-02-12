@@ -3,7 +3,7 @@ using LinearAlgebra, LazySets, ReachabilityAnalysis
 
 isinvertible(x) = applicable(inv, x) && isone(inv(Matrix(x)) * x)
 
-function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
+function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     XDim, _ = size(genmat(X0))
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
@@ -63,7 +63,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
             end
             discritezationDict[d] = copy(disc)
             phiDict[d] = copy(ϕ)
-            inputDiscritezationDict[initialTimeStep] = P
+            inputDiscritezationDict[d] = P
         else
             dU = overapproximate(d * U, Zonotope)
             E_ψ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * U)))
@@ -73,7 +73,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
             rt = concretize(minkowski_sum(E_ψ, E⁺))
             f = concretize(minkowski_sum(lt, rt))
             disc = overapproximate(CH(X0, f), Zonotope)
-            while d < initialTimeStep
+            while d < δ⁺
                 inputDiscritezationDict[d] = P
                 P = minkowski_sum(P, linear_map(ϕ, P))
                 discritezationDict[d] = copy(disc)
@@ -101,14 +101,14 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
             end
             discritezationDict[d] = copy(disc)
             phiDict[d] = copy(ϕ)
-            inputDiscritezationDict[initialTimeStep] = P
+            inputDiscritezationDict[d] = P
         end
     end
     return discritezationDict, inputDiscritezationDict, phiDict
 end
 
 
-function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
+function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     XDim, _ = size(genmat(X0))
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
