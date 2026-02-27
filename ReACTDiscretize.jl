@@ -20,6 +20,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
         Φcache = sum(A) == abs(sum(A)) ? Φ : nothing
         P2A_abs = ReachabilityAnalysis.Exponentiation.Φ₂(A_abs, δ⁻, alg, isInvA, Φcache)
+        P1A = ReachabilityAnalysis.Exponentiation.Φ₁(A, δ⁻, alg, isInvA, Φcache)
 
         if !(zeros(XDim) ∈ U) #Origin is *not* in input
             invA = inv(Matrix(A))
@@ -28,7 +29,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
             dU = overapproximate(δ⁻ * Ut, Zonotope)
             E_ψ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * U)))
             P = minkowski_sum(dU, E_ψ)
-            P̂ = invA * (ϕ - dia) * û
+            P̂ = P1A * û
             lt = minkowski_sum(convert(Zonotope, ϕ * X0), dU)
             E⁺ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * A * X0)))
             rt = minkowski_sum(E_ψ, E⁺)
@@ -124,10 +125,10 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, 
         A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
         Φcache = sum(A) == abs(sum(A)) ? Φ : nothing
         P2A_abs = ReachabilityAnalysis.Exponentiation.Φ₂(A_abs, δ⁻, alg, isInvA, Φcache)
+        P1A = ReachabilityAnalysis.Exponentiation.Φ₁(A, δ⁻, alg, isInvA, Φcache)
 
-        invA = inv(Matrix(A))
         û = B
-        P̂ = (A \ (ϕ - dia)) * û
+        P̂ = P1A * û
         PZ = Zonotope(P̂, zeros(Float64, XDim, 1))
         E⁺ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * A * X0)))
 
