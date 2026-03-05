@@ -13,6 +13,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
     sizehint!(inputDiscritezationDict, elems)
 
     constraintProjVectors = map(x -> x.a, constraint)
+    oldConstraintProjVectors = copy(constraintProjVectors)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)
 
 
@@ -37,9 +38,9 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
     i = 1
 
 
-    Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
-    tempM = similar(Φ)
-    ϕt = similar(Φ)
+    #Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
+    #tempM = similar(Φ)
+    ϕt::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
     newRR = copy(newR)
 
 
@@ -58,17 +59,16 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
                 V = copy(inputDiscritezationDict[currentTimeStep])
                 ϕt = phiDict[currentTimeStep]
             end
-            constraintProjVectors = map(x -> ϕt * x, constraintProjVectors)
+            constraintProjVectors = map(x -> ϕt * x, oldConstraintProjVectors)
 
             changedTimeStep = false
             hom = map(x -> ρ(x, newRR), constraintProjVectors)
-            inhom = map(x -> ρ(x, V), constraintProjVectors)
 
-            if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds))
-                approveFlag = true
+            if reduce(&, <=(Sρ + hom, constraintProjBounds))
+                inhom = map(x -> ρ(x, V), oldConstraintProjVectors)
                 Sρ += inhom
-                mul!(tempM, Φ, ϕt)
-                copy!(Φ, tempM)
+                approveFlag = true
+                oldConstraintProjVectors = constraintProjVectors
             else
                 newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2
@@ -120,6 +120,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
 
     constraintProjVectors = map(x -> x.a, constraint)
+    oldConstraintProjVectors = copy(constraintProjVectors)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)
 
 
@@ -142,9 +143,9 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
     i = 1
 
 
-    Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
-    tempM = similar(Φ)
-    ϕt = similar(Φ)
+    #Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
+    #tempM = similar(Φ)
+    ϕt::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
     newRR = copy(newR)
 
 
@@ -164,7 +165,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
                 ϕt = phiDict[currentTimeStep]
             end
-            constraintProjVectors = map(x -> ϕt * x, constraintProjVectors)
+            constraintProjVectors = map(x -> ϕt * x, oldConstraintProjVectors)
 
             changedTimeStep = false
             hom = map(x -> ρ(x, newRR), constraintProjVectors)
@@ -172,8 +173,9 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
             if reduce(&, <=(hom, constraintProjBounds))
                 approveFlag = true
-                mul!(tempM, Φ, ϕt)
-                copy!(Φ, tempM)
+                oldConstraintProjVectors = constraintProjVectors
+                #mul!(tempM, Φ, ϕt)
+                #copy!(Φ, tempM)
             else
                 newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2

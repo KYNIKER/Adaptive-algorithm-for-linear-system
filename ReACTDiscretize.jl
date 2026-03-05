@@ -23,22 +23,22 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         P1A = ReachabilityAnalysis.Exponentiation.Φ₁(A, δ⁻, alg, isInvA, Φcache)
 
         if !(zeros(XDim) ∈ U) #Origin is *not* in input
-            invA = inv(Matrix(A))
+            #invA = inv(Matrix(A))
             û = copy(U.center)
             Ut = Zonotope(U.center - û, genmat(U))
             dU = overapproximate(δ⁻ * Ut, Zonotope)
-            E_ψ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * U)))
+            E_ψ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * Ut)))
             P = minkowski_sum(dU, E_ψ)
             P̂ = P1A * û
-            lt = minkowski_sum(convert(Zonotope, ϕ * X0), dU)
-            E⁺ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * A * X0)))
-            rt = minkowski_sum(E_ψ, E⁺)
             PZ = Zonotope(P̂, zeros(Float64, size(U.center, 1), 1))
+            lt = minkowski_sum(convert(Zonotope, ϕ * X0), P)
+            E⁺ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * A * X0)))
+            rt = minkowski_sum(PZ, E⁺)
             f = minkowski_sum(lt, rt)
-            disc = overapproximate(CH(X0, minkowski_sum(f, PZ)), Zonotope)
+            disc = overapproximate(CH(X0, f), Zonotope)
+            #disc = Zonotope(disc.center - PZ.center, genmat(disc))
             while d < δ⁺
                 inputDiscritezationDict[d] = P
-                P = minkowski_sum(P, linear_map(ϕ, P))
                 discritezationDict[d] = disc
                 if maxOrder > 0
                     if LazySets.order(P) > maxOrder
@@ -49,7 +49,8 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
                     end
                 end
                 phiDict[d] = copy(ϕ)
-                disc = overapproximate(CH(disc, linear_map(ϕ, disc)), Zonotope)
+                disc = overapproximate(CH(disc, minkowski_sum(P, linear_map(ϕ, disc))), Zonotope)
+                P = minkowski_sum(P, linear_map(ϕ, P))
                 mul!(tempM, ϕ, ϕ)
                 copy!(ϕ, tempM)
                 d = d * 2

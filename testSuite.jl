@@ -115,6 +115,7 @@ end
 model = load_heat_input
 dig = 1
 GC.gc()=#
+#=
 runBenchmark("ISS", 0.01, 4, load_iss, 1)
 GC.gc()
 runBenchmark("beam", 0.002, 4, load_beam, 1)
@@ -133,27 +134,28 @@ GC.gc()
 
 runBenchmark("mna1", 1.0, 4, load_mna1, 1)
 GC.gc()
-
+=#
 # v2
 
-runBenchmarkv2("ISS", 0.01, 4, load_iss, 1)
+runBenchmarkv2("ISS", (2.0)^5 * 10^-3, 3, load_iss, 1)
 GC.gc()
-runBenchmarkv2("beam", 0.002, 4, load_beam, 1)
-GC.gc()
-
-runBenchmarkv2("pde", 0.5, 4, load_pde, 1)
+runBenchmarkv2("beam", (2.0)^8 * 10^-4, 4, load_beam, 1)
 GC.gc()
 
-runBenchmarkv2("motor", 0.5, 3, load_motor, 1)
-GC.gc()
-runBenchmarkv2("building", 0.5, 3, load_building, 1)
+runBenchmarkv2("pde", (2.0)^13 * 10^-4, 4, load_pde, 1)
 GC.gc()
 
-runBenchmarkv2("heatInput", 0.5, 4, load_heat_input, 1)
+runBenchmarkv2("motor", (2.0)^11 * 10^-3, 3, load_motor, 1)
+GC.gc()
+runBenchmarkv2("building", (2.0)^9 * 10^-3, 3, load_building, 1)
 GC.gc()
 
-runBenchmarkv2("mna1", 1.0, 4, load_mna1, 1)
+runBenchmarkv2("heatInput", (2.0)^13 * 10^-4, 4, load_heat_input, 1)
 GC.gc()
+
+runBenchmarkv2("mna1", (2.0)^12 * 10^-4, 4, load_mna1, 1)
+GC.gc()
+
 #runBenchmark("mna5", 0.2, 1, load_mna5, 1)
 #GC.gc()
 #runBenchmark(modelname, 0.0025, dig, model, 0)
