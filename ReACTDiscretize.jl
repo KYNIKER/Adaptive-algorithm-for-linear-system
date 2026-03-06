@@ -3,13 +3,13 @@ using LinearAlgebra, LazySets, ReachabilityAnalysis
 
 isinvertible(x) = applicable(inv, x) && isone(inv(Matrix(x)) * x)
 
-function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=100, reduceOrder::Int=10) where {N}
+function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=10, reduceOrder::Int=10) where {N}
     #XDim, _ = size(genmat(X0))
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
 
-    U = concretize(B * U)
+    U = overapproximate(concretize(B * U), Zonotope)
 
     let ϕ::Matrix{Float64} = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
         tempM = similar(ϕ)
@@ -20,7 +20,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
         Φcache = sum(A) == abs(sum(A)) ? Φ : nothing
         P2A_abs = ReachabilityAnalysis.Exponentiation.Φ₂(A_abs, δ⁻, alg, isInvA, Φcache)
-        #P1A = ReachabilityAnalysis.Exponentiation.Φ₁(A, δ⁻, alg, isInvA, Φcache)
+        P1A = ReachabilityAnalysis.Exponentiation.Φ₁(A, δ⁻, alg, isInvA, Φcache)
 
         #=if !(zeros(XDim) ∈ U) #Origin is *not* in input
             #invA = inv(Matrix(A))
@@ -87,8 +87,9 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
                 end
             end
             phiDict[d] = copy(ϕ)
+            tΦ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, Φcache)
+            P = concretize(tΦ₁ * U)
             disc = overapproximate(CH(disc, minkowski_sum(P, linear_map(ϕ, disc))), Zonotope)
-            P = minkowski_sum(P, linear_map(ϕ, P))
             mul!(tempM, ϕ, ϕ)
             copy!(ϕ, tempM)
             d = d * 2

@@ -51,6 +51,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
         while !approveFlag
             if currentTimeStep < m
+                println(time)
                 return false
             end
 
