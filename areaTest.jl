@@ -13,6 +13,7 @@ include("models/MNA1/mna1_load.jl")
 include("models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
 include("CegarInhomogenous.jl")
+include("ReACTDiscretize.jl")
 
 
 #names = ["beam", "building", "fom", "heat", "iss", "motor", "pde"]
@@ -32,8 +33,13 @@ function runAreaBenchmark(name, load_func)
     Pbounds = []
     Dbounds = []
     for digit in DIGITS
-        P, disc = discing(A, B, P₁, ballβ, δplus, digit)
-        if P === nothing
+        #P, disc = discing(A, B, P₁, ballβ, δplus, digit)
+        m = δplus / 2^(ceil(Integer, log2(δplus)) + ceil(Integer, -log2(10.0^(-digit))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+
+        discritezationDict, inputDiscritezationDict, _ = ReACTDiscretize(A, B, P₁, ballβ, m, δplus)
+        P = inputDiscritezationDict[δplus]
+        disc = discritezationDict[δplus]
+        if inputDiscritezationDict === nothing
             push!(Pbounds, 1)
         else
             push!(Pbounds, mapreduce(x -> abs.(x), +, eachcol(genmat(P))))
@@ -65,7 +71,7 @@ end
 
 #runBenchmark(modelname, 1.0, dig, model, 2)
 #GC.gc()
-#=runAreaBenchmark("building", load_building)
+runAreaBenchmark("building", load_building)
 GC.gc()
 runAreaBenchmark("beam", load_beam)
 GC.gc()
@@ -77,11 +83,11 @@ runAreaBenchmark("pde", load_pde)
 GC.gc()
 runAreaBenchmark("ISS", load_iss)
 GC.gc()
-runAreaBenchmark("fom", load_fom)
-GC.gc()
-runAreaBenchmark("mna1", load_mna1)
-GC.gc()=#
-runAreaBenchmark("mna5", load_mna5)
-GC.gc()
+#runAreaBenchmark("fom", load_fom)
+#GC.gc()
+#runAreaBenchmark("mna1", load_mna1)
+#GC.gc()
+#runAreaBenchmark("mna5", load_mna5)
+#GC.gc()
 #runBenchmark(modelname, 0.0025, dig, model, 0)
 #GC.gc()

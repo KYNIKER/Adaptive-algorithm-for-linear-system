@@ -137,16 +137,17 @@ GC.gc()
 =#
 # v2
 
-runBenchmarkv2("ISS", (2.0)^5 * 10^-3, 3, load_iss, 1)
+runBenchmarkv2("ISS", (2.0)^6 * 10^-4, 4, load_iss, 1)
 GC.gc()
-runBenchmarkv2("beam", (2.0)^8 * 10^-4, 4, load_beam, 1)
+runBenchmarkv2("beam", (2.0)^4 * 10^-5, 5, load_beam, 1)
+GC.gc()
+#=
+runBenchmarkv2("motor", (2.0)^3 * 10^-3, 3, load_motor, 1)
 GC.gc()
 
 runBenchmarkv2("pde", (2.0)^13 * 10^-4, 4, load_pde, 1)
 GC.gc()
 
-runBenchmarkv2("motor", (2.0)^11 * 10^-3, 3, load_motor, 1)
-GC.gc()
 runBenchmarkv2("building", (2.0)^9 * 10^-3, 3, load_building, 1)
 GC.gc()
 
@@ -155,7 +156,7 @@ GC.gc()
 
 runBenchmarkv2("mna1", (2.0)^12 * 10^-4, 4, load_mna1, 1)
 GC.gc()
-
+=#
 #runBenchmark("mna5", 0.2, 1, load_mna5, 1)
 #GC.gc()
 #runBenchmark(modelname, 0.0025, dig, model, 0)

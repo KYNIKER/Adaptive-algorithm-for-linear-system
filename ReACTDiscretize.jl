@@ -3,8 +3,8 @@ using LinearAlgebra, LazySets, ReachabilityAnalysis
 
 isinvertible(x) = applicable(inv, x) && isone(inv(Matrix(x)) * x)
 
-function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
-    XDim, _ = size(genmat(X0))
+function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=100, reduceOrder::Int=10) where {N}
+    #XDim, _ = size(genmat(X0))
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
@@ -14,27 +14,27 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
     let ϕ::Matrix{Float64} = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
         tempM = similar(ϕ)
         d = δ⁻
-        dia::Matrix{Float64} = diagm(ones(XDim))
+        #dia::Matrix{Float64} = diagm(ones(XDim))
         isInvA = isinvertible(A)
         Φ = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
         A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
         Φcache = sum(A) == abs(sum(A)) ? Φ : nothing
         P2A_abs = ReachabilityAnalysis.Exponentiation.Φ₂(A_abs, δ⁻, alg, isInvA, Φcache)
-        P1A = ReachabilityAnalysis.Exponentiation.Φ₁(A, δ⁻, alg, isInvA, Φcache)
+        #P1A = ReachabilityAnalysis.Exponentiation.Φ₁(A, δ⁻, alg, isInvA, Φcache)
 
-        if !(zeros(XDim) ∈ U) #Origin is *not* in input
+        #=if !(zeros(XDim) ∈ U) #Origin is *not* in input
             #invA = inv(Matrix(A))
-            û = copy(U.center)
-            Ut = Zonotope(U.center - û, genmat(U))
-            dU = overapproximate(δ⁻ * Ut, Zonotope)
-            E_ψ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * Ut)))
+            #û = copy(U.center)
+            #Ut = Zonotope(U.center - û, genmat(U))
+            dU = overapproximate(δ⁻ * U, Zonotope)
+            E_ψ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * U)))
             P = minkowski_sum(dU, E_ψ)
-            P̂ = P1A * û
-            PZ = Zonotope(P̂, zeros(Float64, size(U.center, 1), 1))
+            #P̂ = P1A * û
+            #PZ = Zonotope(P̂, zeros(Float64, size(U.center, 1), 1))
             lt = minkowski_sum(convert(Zonotope, ϕ * X0), P)
             E⁺ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * A * X0)))
-            rt = minkowski_sum(PZ, E⁺)
-            f = minkowski_sum(lt, rt)
+            #rt = minkowski_sum(PZ, E⁺)
+            f = minkowski_sum(lt, E⁺)
             disc = overapproximate(CH(X0, f), Zonotope)
             #disc = Zonotope(disc.center - PZ.center, genmat(disc))
             while d < δ⁺
@@ -66,33 +66,18 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
             discritezationDict[d] = copy(disc)
             phiDict[d] = copy(ϕ)
             inputDiscritezationDict[d] = P
-        else
-            dU = overapproximate(d * U, Zonotope)
-            E_ψ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * U)))
-            P = minkowski_sum(dU, E_ψ)
-            E⁺ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * A * X0)))
-            lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), dU))
-            rt = concretize(minkowski_sum(E_ψ, E⁺))
-            f = concretize(minkowski_sum(lt, rt))
-            disc = overapproximate(CH(X0, f), Zonotope)
-            while d < δ⁺
-                inputDiscritezationDict[d] = P
-                P = minkowski_sum(P, linear_map(ϕ, P))
-                discritezationDict[d] = copy(disc)
-                if maxOrder > 0
-                    if LazySets.order(P) > maxOrder
-                        P = reduce_order(P, reduceOrder)
-                    end
-                    if LazySets.order(disc) > maxOrder
-                        disc = reduce_order(disc, reduceOrder)
-                    end
-                end
-                phiDict[d] = copy(ϕ)
-                disc = overapproximate(CH(disc, linear_map(ϕ, disc)), Zonotope)
-                mul!(tempM, ϕ, ϕ)
-                copy!(ϕ, tempM)
-                d = d * 2
-            end
+        else=#
+        dU = overapproximate(d * U, Zonotope)
+        E_ψ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * U)))
+        P = minkowski_sum(dU, E_ψ)
+        E⁺ = convert(Zonotope, symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * A * X0)))
+        lt = concretize(minkowski_sum(convert(Zonotope, ϕ * X0), dU))
+        rt = concretize(minkowski_sum(E_ψ, E⁺))
+        f = concretize(minkowski_sum(lt, rt))
+        disc = overapproximate(CH(X0, f), Zonotope)
+        while d < δ⁺
+            inputDiscritezationDict[d] = P
+            discritezationDict[d] = copy(disc)
             if maxOrder > 0
                 if LazySets.order(P) > maxOrder
                     P = reduce_order(P, reduceOrder)
@@ -101,10 +86,25 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
                     disc = reduce_order(disc, reduceOrder)
                 end
             end
-            discritezationDict[d] = copy(disc)
             phiDict[d] = copy(ϕ)
-            inputDiscritezationDict[d] = P
+            disc = overapproximate(CH(disc, minkowski_sum(P, linear_map(ϕ, disc))), Zonotope)
+            P = minkowski_sum(P, linear_map(ϕ, P))
+            mul!(tempM, ϕ, ϕ)
+            copy!(ϕ, tempM)
+            d = d * 2
         end
+        if maxOrder > 0
+            if LazySets.order(P) > maxOrder
+                P = reduce_order(P, reduceOrder)
+            end
+            if LazySets.order(disc) > maxOrder
+                disc = reduce_order(disc, reduceOrder)
+            end
+        end
+        discritezationDict[d] = copy(disc)
+        phiDict[d] = copy(ϕ)
+        inputDiscritezationDict[d] = P
+        #end
     end
     return discritezationDict, inputDiscritezationDict, phiDict
 end
