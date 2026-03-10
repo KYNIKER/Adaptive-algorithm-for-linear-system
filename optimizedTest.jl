@@ -73,7 +73,7 @@ PProf.Allocs.pprof(from_c=false)=#
 #@time boxes2, timesteps, attemptsRecorder = reachSetsCegar(A, initialTimeStep, T, P₁, constraint, strategy, digits)
 
 if plotOutput
-    boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits)
+    boxes2, timesteps, attemptsRecorder = cegarInputSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
     corners2 = Vector(undef, size(boxes2, 1))
 
     begin

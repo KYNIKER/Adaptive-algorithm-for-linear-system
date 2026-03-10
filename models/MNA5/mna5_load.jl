@@ -11,5 +11,5 @@ function load_mna5()
     X0 = convert(Zonotope, X0)
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
 
-    return A, b, nothing, X0, T, constraint, dimToPlot
+    return A, b, nothing, X0, T, [constraint], dimToPlot
 end
