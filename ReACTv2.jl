@@ -1,7 +1,7 @@
 using LazySets, LinearAlgebra
 
 function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
-    XDim, _ = size(genmat(X0))
+    #XDim, _ = size(genmat(X0))
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
     elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
@@ -32,16 +32,13 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
         phiDict[key] = permutedims(phiDict[key])
     end
 
-    V::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
     Sρ = zeros(Float64, length(constraint))
-    newR::Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
+    newRR::Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
     i = 1
 
-
-    #Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
-    #tempM = similar(Φ)
     ϕt::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
-    newRR = copy(newR)
+
+
 
 
     while time < endtime
@@ -57,7 +54,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
             if changedTimeStep
                 newRR = discritezationDict[currentTimeStep]
-                V = copy(inputDiscritezationDict[currentTimeStep])
+                #V = copy(inputDiscritezationDict[currentTimeStep])
                 ϕt = phiDict[currentTimeStep]
             end
             constraintProjVectors = map(x -> ϕt * x, oldConstraintProjVectors)
@@ -66,12 +63,12 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             hom = map(x -> ρ(x, newRR), constraintProjVectors)
 
             if reduce(&, <=(Sρ + hom, constraintProjBounds))
-                inhom = map(x -> ρ(x, V), oldConstraintProjVectors)
-                Sρ += inhom
+                #inhom = map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
+                Sρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 approveFlag = true
                 oldConstraintProjVectors = constraintProjVectors
             else
-                newR = copy(newR)
+                #newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2
                 changedTimeStep = true
                 attempts = attempts + 1
@@ -110,7 +107,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 end
 
 function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
-    XDim, _ = size(genmat(X0))
+    #XDim, _ = size(genmat(X0))
     m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
     elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
