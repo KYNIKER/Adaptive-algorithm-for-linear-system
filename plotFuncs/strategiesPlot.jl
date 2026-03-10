@@ -1,9 +1,8 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, FastExpm, Profile, PProf
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf
 
 
 include("../helperfunctions.jl")
-include("../models.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
 include("../models/motor/motor_load.jl")
@@ -15,7 +14,7 @@ include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("../models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
-include("../CegarInhomogenous.jl")
+include("../ReACT.jl")
 include("plotHelper.jl")
 
 
@@ -30,7 +29,13 @@ Digits = 5
 #A, B, U, P₁, T, constraint, dimToPlot = load_heat_input()
 
 # No input
-A, P₁, constraint, T, dimToPlot= loadCosWave()
+
+A = [0. 1.; 
+        -2.5 0.]
+P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])
+constraint = LazySets.HalfSpace([0., 1.], -1.6)
+T = [0, 8]
+dimToPlot = 2
 B = [1.0; 1.0;;]
 U :: Zonotope = BallInf([0.0], 0.0)
 
@@ -44,11 +49,11 @@ constraint = isa(constraint, Array) ? constraint : [constraint]
 
 
 
-boxes2, timesteps2, attemptsRecorder2 = cegarInputSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, 1)
+boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, 1)
 shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
 
 
-boxes3, timesteps3, attemptsRecorder3 = cegarInputSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, 2)
+boxes3, timesteps3, attemptsRecorder3 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, 2)
 shapes3, maxVal3, minVal3 = getShapes(boxes3, timesteps3)
 
 println("Finished simulations")

@@ -1,9 +1,8 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, FastExpm, Profile, PProf
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf
 
 
 include("../helperfunctions.jl")
-include("../models.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
 include("../models/motor/motor_load.jl")
@@ -15,21 +14,24 @@ include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("../models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
-include("../CegarInhomogenous.jl")
+include("../ReACT.jl")
 include("plotHelper.jl")
 
 
 # We load a simple coswave
-const μ = 0.
-const STRATEGY = 2
+STRATEGY = 2
 
 initialTimeStep = 0.8
 Digits = 5
 
 
-A, P₁, constraint, T, dimToPlot= loadCosWave()
 
-
+A = [0. 1.; 
+        -2.5 0.]
+P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])
+constraint = LazySets.HalfSpace([0., 1.], -1.6)
+T = [0, 8]
+dimToPlot = 2
 # No input
 B = [1.0; 1.0;;]
 #U = LazySets.Zonotope([0], [[1]])
@@ -38,7 +40,7 @@ U :: Zonotope = BallInf([0.0], 0.0)
 
 constraint = isa(constraint, Array) ? constraint : [constraint]
 
-boxes1, timesteps1, attemptsRecorder1 = cegarInputSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
 shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
 
 #println("Finished simulations")
@@ -49,7 +51,7 @@ initialTimeStep = 0.1
 
 println("Starting second simulation with timestep size: ", initialTimeStep)
 
-boxes2, timesteps2, attemptsRecorder2 = OneTimeStepSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, -1, STRATEGY)
 shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
 
 

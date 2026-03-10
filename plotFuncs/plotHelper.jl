@@ -1,9 +1,8 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, FastExpm, Profile, PProf
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf
 
 
 include("../helperfunctions.jl")
-include("../models.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
 include("../models/motor/motor_load.jl")
@@ -14,8 +13,7 @@ include("../models/beam/beam_load.jl")
 include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("../models/MNA5/mna5_load.jl")
-#include("CegarFunctions.jl")
-include("../CegarInhomogenous.jl")
+#include("../ReACT.jl")
 
 
 function getShapes(boxes2, timesteps)

@@ -1,9 +1,8 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, FastExpm, Profile, PProf, ReachabilityAnalysis
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, ReachabilityAnalysis
 
 
 include("../helperfunctions.jl")
-include("../models.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
 include("../models/motor/motor_load.jl")
@@ -27,11 +26,11 @@ initialTimeStep = 0.5
 Digits = 3
 STRATEGY = 1
 
-boxes1, timesteps1, attemptsRecorder1 = cegarInputSystem(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
 
 
-# GLGM
+# LGG
 δ = 0.002
 tVal = maximum(T)
 n = size(A, 1)

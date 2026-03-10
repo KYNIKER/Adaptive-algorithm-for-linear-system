@@ -1,9 +1,8 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, FastExpm, Profile, PProf
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf
 
 
 include("../helperfunctions.jl")
-include("../models.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
 include("../models/motor/motor_load.jl")
@@ -15,7 +14,7 @@ include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("../models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
-include("../CegarInhomogenous.jl")
+include("../ReACT.jl")
 include("plotHelper.jl")
 
 
@@ -36,18 +35,18 @@ STRATEGY = 1
 
 constraint = isa(constraint, Array) ? constraint : [constraint]
 
-boxes1, timesteps1, attemptsRecorder1 = cegarInputSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
 shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
 
 initialTimeStep = 2
 
 
-boxes2, timesteps2, attemptsRecorder2 = cegarInputSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
 shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
 
 initialTimeStep = 8
 
-boxes3, timesteps3, attemptsRecorder3 = cegarInputSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+boxes3, timesteps3, attemptsRecorder3 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
 shapes3, maxVal3, minVal3 = getShapes(boxes3, timesteps3)
 
 println("Finished simulations")
@@ -98,5 +97,5 @@ plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=
 # println(x0)
 
 
-savefig(p, "deltaPlusPlot.pdf")
+savefig(p, "results/resultdeltaPlusPlot.pdf")
 plot(p)

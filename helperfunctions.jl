@@ -1,4 +1,4 @@
-using LazySets, LinearAlgebra, Plots, FastExpm
+using LazySets, LinearAlgebra, Plots
 
 using Random # For strategy 4
 
