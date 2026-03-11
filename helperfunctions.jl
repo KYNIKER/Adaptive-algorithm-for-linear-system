@@ -1,6 +1,8 @@
 using LazySets, LinearAlgebra, Plots
 
-using Random # For strategy 4
+## Most of these are no longer used
+## This file is solely used for plotting, 
+## and is not important for ReACT
 
 function rectangleFromHBox(res::AbstractVector{Shape}, corners)
     for i in 1:size(corners, 1)
