@@ -59,10 +59,11 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
             end
 
             changedTimeStep = false
-            hom = map(x -> ρ(x, newRR), constraintProjVectors)
+            #hom = map(x -> ρ(x, newRR), constraintProjVectors)
             inhom = map(x -> ρ(x, V), constraintProjVectors)
-
-            if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds))
+            
+            if all((inputAccumulated + inputCurrent + ρ(x, newRR)) <= y for (inputAccumulated, inputCurrent, x, y) in zip(Sρ, inhom, constraintProjVectors, constraintProjBounds))
+            #if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds))
                 approveFlag = true
                 Sρ += inhom
                 mul!(tempM, Φ, ϕt)
@@ -161,8 +162,9 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
             changedTimeStep = false
 
-            hom = map(x -> ρ(x, newRR), constraintProjVectors)
-            if reduce(&, <=(hom, constraintProjBounds))
+            #hom = map(x -> ρ(x, newRR), constraintProjVectors)
+            if all(ρ(x, newRR) <= y for (x, y) in zip(constraintProjVectors, constraintProjBounds))
+            #if reduce(&, <=(hom, constraintProjBounds))
                 approveFlag = true
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM)

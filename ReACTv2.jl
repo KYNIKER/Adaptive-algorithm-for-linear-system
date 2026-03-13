@@ -61,8 +61,8 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
             changedTimeStep = false
             hom = map(x -> ρ(x, newRR), constraintProjVectors)
-
-            if reduce(&, <=(Sρ + hom, constraintProjBounds))
+            if all((input + ρ(x, newRR)) <= y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))
+            #if reduce(&, <=(Sρ + hom, constraintProjBounds))
                 #inhom = map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 Sρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 approveFlag = true
@@ -166,10 +166,10 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             constraintProjVectors = map(x -> ϕt * x, oldConstraintProjVectors)
 
             changedTimeStep = false
-            hom = map(x -> ρ(x, newRR), constraintProjVectors)
+            #hom = map(x -> ρ(x, newRR), constraintProjVectors)
 
-
-            if reduce(&, <=(hom, constraintProjBounds))
+            if all(ρ(x, newRR) <= y for (x, y) in zip(constraintProjVectors, constraintProjBounds))
+            #if reduce(&, <=(hom, constraintProjBounds))
                 approveFlag = true
                 oldConstraintProjVectors = constraintProjVectors
                 #mul!(tempM, Φ, ϕt)
