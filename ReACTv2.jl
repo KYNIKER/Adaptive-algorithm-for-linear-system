@@ -60,9 +60,9 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             constraintProjVectors = map(x -> ϕt * x, oldConstraintProjVectors)
 
             changedTimeStep = false
-            hom = map(x -> ρ(x, newRR), constraintProjVectors)
+            #hom = map(x -> ρ(x, newRR), constraintProjVectors)
             if all((input + ρ(x, newRR)) <= y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))
-            #if reduce(&, <=(Sρ + hom, constraintProjBounds))
+                #if reduce(&, <=(Sρ + hom, constraintProjBounds))
                 #inhom = map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 Sρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 approveFlag = true
@@ -71,7 +71,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
                 #newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2
                 changedTimeStep = true
-                attempts = attempts + 1
+                #attempts = attempts + 1
             end
         end
 
@@ -82,6 +82,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
         # Reset / apply strategy
         # Only do this if the current timestep is less than the initial
+
         if STRATEGY == 0
             # Only reduce
         elseif STRATEGY == 1
@@ -169,7 +170,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
             #hom = map(x -> ρ(x, newRR), constraintProjVectors)
 
             if all(ρ(x, newRR) <= y for (x, y) in zip(constraintProjVectors, constraintProjBounds))
-            #if reduce(&, <=(hom, constraintProjBounds))
+                #if reduce(&, <=(hom, constraintProjBounds))
                 approveFlag = true
                 oldConstraintProjVectors = constraintProjVectors
                 #mul!(tempM, Φ, ϕt)

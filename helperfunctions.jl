@@ -433,3 +433,5 @@ end
 function E_ψ(U, δ, A)
     return convert(Zonotope, symmetric_interval_hull(Φ₂(A, δ, isinvertible(A)) * symmetric_interval_hull(A * U)))
 end
+
+Base.:+(z1::Zonotope, z2::Zonotope) = Zonotope(z1.center + z2.center, z1.generators + z2.generators)
