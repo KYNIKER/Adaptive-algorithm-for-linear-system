@@ -1,5 +1,5 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, Plots.PlotMeasures
 
 
 include("../helperfunctions.jl")
@@ -22,19 +22,21 @@ include("plotHelper.jl")
 STRATEGY = 1
 
 initialTimeStep = 0.8
-Digits = 5
+Digits = 1
 
+palette = Plots.palette(:cyclic_mrybm_35_75_c68_n256_s25, 5)
 
+alp = 0.7
 
 A = [0. 1.;
     -2.5 0.]
 P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])
-constraint = LazySets.HalfSpace(-[0., 1.], 1.7)
-T = [0, 3]
+constraint = LazySets.HalfSpace(-[0., 1.], 1.65)
+T = [0, 8]
 dimToPlot = 2
 # No input
 B = diagm([0.0, 0.0])
-U = LazySets.Zonotope([0.0, 0.0], [[0.0, 0.0]])
+U = Zonotope(zeros(dim(P₁)), [zeros(dim(P₁))])
 #U::Zonotope = BallInf([0.0], 0.0)
 
 
@@ -55,40 +57,85 @@ println("Starting second simulation with timestep size: ", initialTimeStep)
 boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, -1, STRATEGY)
 shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
 
+initialTimeStep = 0.4
+
+println("Starting third simulation with timestep size: ", initialTimeStep)
+
+boxes3, timesteps3, attemptsRecorder3 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, -1, STRATEGY)
+shapes3, maxVal3, minVal3 = getShapes(boxes3, timesteps3)
+
+
+initialTimeStep = 0.8
+
+println("Starting fourth simulation with timestep size: ", initialTimeStep)
+
+boxes4, timesteps4, attemptsRecorder4 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, -1, STRATEGY)
+shapes4, maxVal4, minVal4 = getShapes(boxes4, timesteps4; bounds=[-constraint[1].b, 5.0])
 
 println("Finished simulations")
 
-constraintValAdjusted = constraint[1].b * 1.1
-maxVal = max(maxVal2, constraintValAdjusted)
-minVal = min(minVal2, constraintValAdjusted)
+constraintValAdjusted = -constraint[1].b * 1.2
+maxVal = max(maxVal1, maxVal2, maxVal3, maxVal4, constraintValAdjusted)
+minVal = min(minVal1, minVal2, minVal3, constraintValAdjusted)
 
 
-p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25,
+p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
+    legendfont=font(8, "Times"),
+    #legendcolumn=-1,
+    #legend_position=:outertop,
+    tickfont=font(8, "Times"),
     xguidefont=font(25, "Times"),
     yguidefont=font(25, "Times"),
-    #xtick=([0, 1], ["0", "T"]),
+    xtick=([0, 8], ["0", "T"]),
+    ytick=([], []),
+    bottom_margin=2mm,
+    left_margin=5mm,
+    right_margin=5mm,
+    top_margin=2mm,
     ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
 
 
+for i in eachindex(shapes4)
+    if i == 1
+        plot!(p, shapes4[i], vars=(1, 0), c=palette[1], alpha=alp,
+            label="Pseudo")
+    else
+        plot!(p, shapes4[i], vars=(1, 0), c=palette[1], alpha=alp,
+            label="")
+    end
+end
+
 for i in eachindex(shapes1)
     if i == 1
-        plot!(p, shapes1[i], vars=(1, 0), c=:forestgreen, alpha=:0.2,
+        plot!(p, shapes1[i], vars=(1, 0), c=palette[2], alpha=alp,
             label="ReACT")
     else
-        plot!(p, shapes1[i], vars=(1, 0), c=:forestgreen, alpha=:0.2,
+        plot!(p, shapes1[i], vars=(1, 0), c=palette[2], alpha=alp,
+            label="")
+    end
+end
+
+for i in eachindex(shapes3)
+    if i == 1
+        plot!(p, shapes3[i], vars=(1, 0), c=palette[3], alpha=alp,
+            label="0.4")
+    else
+        plot!(p, shapes3[i], vars=(1, 0), c=palette[3], alpha=alp,
             label="")
     end
 end
 
 for i in eachindex(shapes2)
     if i == 1
-        plot!(p, shapes2[i], vars=(1, 0), c=:blue, alpha=:0.2,
-            label="Fixed Timestep")
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[4], alpha=alp,
+            label="0.1")
     else
-        plot!(p, shapes2[i], vars=(1, 0), c=:blue, alpha=:0.2,
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[4], alpha=alp,
             label="")
     end
 end
+
+
 
 # Plot real coswave
 #ω = sqrt(2.5)
@@ -99,8 +146,9 @@ end
 
 # Plot constraint
 
-plot!(LazySets.HalfSpace(constraint[1].a, constraint[1].b), lab="Unsafe Region", c=:black)
+plot!(LazySets.HalfSpace(-constraint[1].a, -constraint[1].b), lab="Unsafe Region", c=palette[5], fillstyle=://)
 
 
 
 plot(p)
+savefig(p, "Introduction.pdf")

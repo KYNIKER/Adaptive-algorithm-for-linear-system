@@ -16,7 +16,7 @@ include("../models/MNA5/mna5_load.jl")
 #include("../ReACT.jl")
 
 
-function getShapes(boxes2, timesteps)
+function getShapes(boxes2, timesteps; bounds=missing)
 
     corners2 = Vector(undef, size(boxes2, 1))
 
@@ -24,7 +24,15 @@ function getShapes(boxes2, timesteps)
         for i in 1:(size(boxes2, 1))
             H = box_approximation(boxes2[i])
             H_proj = LazySets.project(H, [dimToPlot]) # Only get the dimension we care about
-            corners2[i] = vertices_list(H_proj) #[[low(H_proj, 1), high(H_proj, 1)]] #
+            if ismissing(bounds)
+
+                corners2[i] = vertices_list(H_proj) #[[low(H_proj, 1), high(H_proj, 1)]] #
+            else
+                l = map(x -> x < bounds[1] ? bounds[1] : x, low(H_proj))
+                h = map(x -> x > bounds[2] ? bounds[2] : x, high(H_proj))
+                H_proj = Hyperrectangle(low=l, high=h)
+                corners2[i] = vertices_list(H_proj)
+            end
         end
     end
 
