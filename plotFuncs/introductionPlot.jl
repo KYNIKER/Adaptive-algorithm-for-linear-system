@@ -19,17 +19,17 @@ include("plotHelper.jl")
 
 
 # We load a simple coswave
-STRATEGY = 2
+STRATEGY = 1
 
 initialTimeStep = 0.8
-Digits = 3
+Digits = 5
 
 
 
 A = [0. 1.;
-    -1. 0.]
+    -2.5 0.]
 P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])
-constraint = LazySets.HalfSpace([0., 1.], -1.7)
+constraint = LazySets.HalfSpace(-[0., 1.], 1.7)
 T = [0, 3]
 dimToPlot = 2
 # No input
@@ -66,10 +66,10 @@ minVal = min(minVal2, constraintValAdjusted)
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25,
     xguidefont=font(25, "Times"),
     yguidefont=font(25, "Times"),
-    xtick=([0, 1], ["0", "T"]),
+    #xtick=([0, 1], ["0", "T"]),
     ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
 
-#=
+
 for i in eachindex(shapes1)
     if i == 1
         plot!(p, shapes1[i], vars=(1, 0), c=:forestgreen, alpha=:0.2,
@@ -79,7 +79,7 @@ for i in eachindex(shapes1)
             label="")
     end
 end
-=#
+
 for i in eachindex(shapes2)
     if i == 1
         plot!(p, shapes2[i], vars=(1, 0), c=:blue, alpha=:0.2,
@@ -99,7 +99,7 @@ end
 
 # Plot constraint
 
-plot!(LazySets.HalfSpace([0.0, 1.0], constraint[1].b), lab="Unsafe Region", c=:black)
+plot!(LazySets.HalfSpace(constraint[1].a, constraint[1].b), lab="Unsafe Region", c=:black)
 
 
 

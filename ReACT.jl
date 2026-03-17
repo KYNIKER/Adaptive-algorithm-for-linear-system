@@ -228,6 +228,9 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     constraintProjVectors = map(x -> x.a, constraint)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)
 
+    println(constraintProjVectors)
+    println(constraintProjBounds)
+
     discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
 
     time::Float64 = minimum(interval)
@@ -260,8 +263,9 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
         while !approveFlag
             if currentTimeStep < m
                 currentTimeStep = m
-                #println(attempts)
-                return reachSet, timeStepRecorder, attemptsRecorder
+                println(constraintProjBounds)
+                println(map(x -> ρ(x, newRR), constraintProjVectors))
+                return false
             end
 
             if changedTimeStep
@@ -277,15 +281,19 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
             changedTimeStep = false
             hom = map(x -> ρ(x, newRR), constraintProjVectors)
-            println(hom)
+            #println(hom)
             inhom = map(x -> ρ(x, V), constraintProjVectors)
 
-            if reduce(&, <=(Sρ + hom, constraintProjBounds)) || Digits == -1
+            if all((input + ρ(x, newRR)) - y <= 0.0 for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds)) #|| Digits == -1
                 approveFlag = true
                 Sρ += inhom
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM)
             else
+                #=if attempts == 1
+                    println(Sρ, " ", hom, " ", inhom)
+                end=#
+
                 newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2
                 changedTimeStep = true
@@ -295,7 +303,7 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
 
         push!(attemptsRecorder, attempts)
-        push!(reachSet, newRR) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
+        push!(reachSet, minkowski_sum(newRR, V)) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
         push!(timeStepRecorder, currentTimeStep)
 
         i = i + 1
