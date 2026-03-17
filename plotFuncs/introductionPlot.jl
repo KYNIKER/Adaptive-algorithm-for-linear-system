@@ -22,25 +22,26 @@ include("plotHelper.jl")
 STRATEGY = 2
 
 initialTimeStep = 0.8
-Digits = 5
+Digits = 3
 
 
 
-A = [0. 1.; 
-        -2.5 0.]
+A = [0. 1.;
+    -1. 0.]
 P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])
-constraint = LazySets.HalfSpace([0., 1.], -1.6)
-T = [0, 8]
+constraint = LazySets.HalfSpace([0., 1.], -1.7)
+T = [0, 3]
 dimToPlot = 2
 # No input
-B = [1.0; 1.0;;]
-#U = LazySets.Zonotope([0], [[1]])
-U :: Zonotope = BallInf([0.0], 0.0)
+B = diagm([0.0, 0.0])
+U = LazySets.Zonotope([0.0, 0.0], [[0.0, 0.0]])
+#U::Zonotope = BallInf([0.0], 0.0)
 
 
 constraint = isa(constraint, Array) ? constraint : [constraint]
 
 boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+#println(boxes1)
 shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
 
 #println("Finished simulations")
@@ -58,29 +59,43 @@ shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
 println("Finished simulations")
 
 constraintValAdjusted = constraint[1].b * 1.1
-maxVal = max(maxVal1, maxVal2, constraintValAdjusted) 
-minVal = min(minVal1, minVal2, constraintValAdjusted)
+maxVal = max(maxVal2, constraintValAdjusted)
+minVal = min(minVal2, constraintValAdjusted)
 
 
-p = plot(dpi=300, thickness_scaling=1, ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
+p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25,
+    xguidefont=font(25, "Times"),
+    yguidefont=font(25, "Times"),
+    xtick=([0, 1], ["0", "T"]),
+    ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
 
-
+#=
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], vars=(1,0), c=:forestgreen, alpha=:0.2,
-        label = i == 1 ? "ReACT" : "")
+    if i == 1
+        plot!(p, shapes1[i], vars=(1, 0), c=:forestgreen, alpha=:0.2,
+            label="ReACT")
+    else
+        plot!(p, shapes1[i], vars=(1, 0), c=:forestgreen, alpha=:0.2,
+            label="")
+    end
 end
-
+=#
 for i in eachindex(shapes2)
-    plot!(p, shapes2[i], vars=(1,0), c=:blue, alpha=:0.2,
-        label = i == 1 ? "Fixed Timestep" : "")
+    if i == 1
+        plot!(p, shapes2[i], vars=(1, 0), c=:blue, alpha=:0.2,
+            label="Fixed Timestep")
+    else
+        plot!(p, shapes2[i], vars=(1, 0), c=:blue, alpha=:0.2,
+            label="")
+    end
 end
 
 # Plot real coswave
-ω = sqrt(2.5)
-t = 0:0.01:10
-x1 = 1.5 .* cos.(ω .* t)
+#ω = sqrt(2.5)
+#t = 0:0.01:10
+#x1 = 1.5 .* cos.(ω .* t)
 
-plot!(p, t, x1, label="Cos(t)", c=:red)
+#plot!(p, t, x1, label="Cos(t)", c=:red)
 
 # Plot constraint
 

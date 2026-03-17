@@ -61,9 +61,9 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
             changedTimeStep = false
             #hom = map(x -> ρ(x, newRR), constraintProjVectors)
             inhom = map(x -> ρ(x, V), constraintProjVectors)
-            
+
             if all((inputAccumulated + inputCurrent + ρ(x, newRR)) <= y for (inputAccumulated, inputCurrent, x, y) in zip(Sρ, inhom, constraintProjVectors, constraintProjBounds))
-            #if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds))
+                #if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds))
                 approveFlag = true
                 Sρ += inhom
                 mul!(tempM, Φ, ϕt)
@@ -164,7 +164,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
             #hom = map(x -> ρ(x, newRR), constraintProjVectors)
             if all(ρ(x, newRR) <= y for (x, y) in zip(constraintProjVectors, constraintProjBounds))
-            #if reduce(&, <=(hom, constraintProjBounds))
+                #if reduce(&, <=(hom, constraintProjBounds))
                 approveFlag = true
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM)
@@ -207,15 +207,15 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 end
 
 function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
-    
+
     m = 0
     # Override for 1 timestep system for plotting
     if Digits == -1
         m = initialTimeStep
-    else 
+    else
         m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     end
-    m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    #m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
     elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
     phiDict = Dict{Float64,Matrix{Float64}}()
@@ -259,7 +259,9 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
         while !approveFlag
             if currentTimeStep < m
-                return false
+                currentTimeStep = m
+                #println(attempts)
+                return reachSet, timeStepRecorder, attemptsRecorder
             end
 
             if changedTimeStep
@@ -275,9 +277,10 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
             changedTimeStep = false
             hom = map(x -> ρ(x, newRR), constraintProjVectors)
+            println(hom)
             inhom = map(x -> ρ(x, V), constraintProjVectors)
 
-            if reduce(&, <=(Sρ + hom + inhom, constraintProjBounds))
+            if reduce(&, <=(Sρ + hom, constraintProjBounds)) || Digits == -1
                 approveFlag = true
                 Sρ += inhom
                 mul!(tempM, Φ, ϕt)
@@ -292,7 +295,7 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
 
         push!(attemptsRecorder, attempts)
-        push!(reachSet, minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
+        push!(reachSet, newRR) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
         push!(timeStepRecorder, currentTimeStep)
 
         i = i + 1

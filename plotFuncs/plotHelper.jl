@@ -17,14 +17,14 @@ include("../models/MNA5/mna5_load.jl")
 
 
 function getShapes(boxes2, timesteps)
-    
+
     corners2 = Vector(undef, size(boxes2, 1))
 
     begin
         for i in 1:(size(boxes2, 1))
             H = box_approximation(boxes2[i])
             H_proj = LazySets.project(H, [dimToPlot]) # Only get the dimension we care about
-            corners2[i] = vertices_list(H_proj)
+            corners2[i] = vertices_list(H_proj) #[[low(H_proj, 1), high(H_proj, 1)]] #
         end
     end
 
@@ -47,7 +47,7 @@ function getShapes(boxes2, timesteps)
     shapes2 = Vector{Shape}(undef, size(boxes2, 1))
 
     rectangleFromHBoxWithTimestepArray(shapes2, corners2, timesteps, minimum(T), 1)
-    
+
     cornersToSearch = [value[1] for box in corners2 for value in box]
     maxVal = maximum(cornersToSearch)
     minVal = minimum(cornersToSearch)
