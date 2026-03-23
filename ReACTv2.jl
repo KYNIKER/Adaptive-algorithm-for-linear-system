@@ -14,7 +14,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
     constraintProjVectors = map(x -> x.a, constraint)
     oldConstraintProjVectors = copy(constraintProjVectors)
-    constraintProjBounds = ρ.(constraintProjVectors, constraint)
+    constraintProjBounds = map(x -> x.b, constraint)
 
 
 
@@ -48,7 +48,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
         while !approveFlag
             if currentTimeStep < m
-                println(time)
+                #println(time)
                 return false
             end
 
@@ -120,7 +120,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
 
     constraintProjVectors = map(x -> x.a, constraint)
     oldConstraintProjVectors = copy(constraintProjVectors)
-    constraintProjBounds = ρ.(constraintProjVectors, constraint)
+    constraintProjBounds = map(x -> x.b, constraint)
 
 
 

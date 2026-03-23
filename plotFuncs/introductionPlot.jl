@@ -1,5 +1,5 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, Plots.PlotMeasures
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, Plots.PlotMeasures, LaTeXStrings
 
 
 include("../helperfunctions.jl")
@@ -31,7 +31,7 @@ alp = 0.7
 A = [0. 1.;
     -2.5 0.]
 P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])
-constraint = LazySets.HalfSpace(-[0., 1.], 1.65)
+constraint = LazySets.HalfSpace(-[0., 1.], -1.65)
 T = [0, 8]
 dimToPlot = 2
 # No input
@@ -66,16 +66,16 @@ shapes3, maxVal3, minVal3 = getShapes(boxes3, timesteps3)
 
 
 initialTimeStep = 0.8
-
+#=
 println("Starting fourth simulation with timestep size: ", initialTimeStep)
 
 boxes4, timesteps4, attemptsRecorder4 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, -1, STRATEGY)
 shapes4, maxVal4, minVal4 = getShapes(boxes4, timesteps4; bounds=[-constraint[1].b, 5.0])
-
+=#
 println("Finished simulations")
 
 constraintValAdjusted = -constraint[1].b * 1.2
-maxVal = max(maxVal1, maxVal2, maxVal3, maxVal4, constraintValAdjusted)
+maxVal = max(maxVal1, maxVal2, maxVal3, constraintValAdjusted)
 minVal = min(minVal1, minVal2, minVal3, constraintValAdjusted)
 
 
@@ -94,7 +94,7 @@ p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
     top_margin=2mm,
     ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
 
-
+#=
 for i in eachindex(shapes4)
     if i == 1
         plot!(p, shapes4[i], vars=(1, 0), c=palette[1], alpha=alp,
@@ -104,7 +104,7 @@ for i in eachindex(shapes4)
             label="")
     end
 end
-
+=#
 for i in eachindex(shapes1)
     if i == 1
         plot!(p, shapes1[i], vars=(1, 0), c=palette[2], alpha=alp,
@@ -114,21 +114,21 @@ for i in eachindex(shapes1)
             label="")
     end
 end
-
+#=
 for i in eachindex(shapes3)
     if i == 1
         plot!(p, shapes3[i], vars=(1, 0), c=palette[3], alpha=alp,
-            label="0.4")
+            label=L"\delta =0.4")
     else
         plot!(p, shapes3[i], vars=(1, 0), c=palette[3], alpha=alp,
             label="")
     end
 end
-
+=#
 for i in eachindex(shapes2)
     if i == 1
         plot!(p, shapes2[i], vars=(1, 0), c=palette[4], alpha=alp,
-            label="0.1")
+            label=L"\delta = 0.1")
     else
         plot!(p, shapes2[i], vars=(1, 0), c=palette[4], alpha=alp,
             label="")
@@ -146,7 +146,7 @@ end
 
 # Plot constraint
 
-plot!(LazySets.HalfSpace(-constraint[1].a, -constraint[1].b), lab="Unsafe Region", c=palette[5], fillstyle=://)
+plot!(LazySets.HalfSpace(constraint[1].a, constraint[1].b), lab=(L"\mathcal{X}_\bot"), c=palette[5], fillstyle=://)
 
 
 

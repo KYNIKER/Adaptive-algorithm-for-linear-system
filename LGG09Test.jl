@@ -1,6 +1,6 @@
 using ReachabilityAnalysis, Plots, LazySets, BenchmarkTools, CSV, DataFrames, MathematicalPredicates
 
-include("models.jl")
+#include("models.jl")
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
 include("models/motor/motor_load.jl")
@@ -86,7 +86,7 @@ function doLGG09JuliaTest(load_func, name)
     end
 
     df = DataFrame(name=name, avgTime=mean(timeList), medianTime=median(timeList), success=res)
-    filename = "results/" * namePrint * "JuliaResults" * ".csv"
+    filename = "results/Report" * namePrint * "JuliaResults" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim=";", append=true)

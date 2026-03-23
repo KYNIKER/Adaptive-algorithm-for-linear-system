@@ -17,7 +17,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
 
         A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
         Φcache = sum(A) == abs(sum(A)) ? ϕ : nothing
-        P2A_abs = ReachabilityAnalysis.Exponentiation.Φ₂(A_abs, δ⁻, alg, isInvA, Φcache)
+        P2A_abs = ReachabilityAnalysis.Exponentiation.Φ₂(A_abs, δ⁻, alg, isInvA, nothing)
 
 
         dU = overapproximate(d * U, Zonotope)
@@ -28,7 +28,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         rt = minkowski_sum(E_ψ, E⁺)
         f = minkowski_sum(lt, rt)
         disc = overapproximate(CH(X0, f), Zonotope)
-        Φ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, Φcache)
+        Φ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, nothing)
         P = linear_map(Φ₁, U)
         #println(disc)
         while d < δ⁺
@@ -36,7 +36,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
             inputDiscritezationDict[d] = copy(P)
             if maxOrder > 0
                 if LazySets.order(P) > maxOrder
-                    P = reduce_order(P, reduceOrder)
+                    #P = reduce_order(P, reduceOrder)
                 end
                 if LazySets.order(disc) > maxOrder
                     disc = reduce_order(disc, reduceOrder)
@@ -52,7 +52,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         end
         if maxOrder > 0
             if LazySets.order(P) > maxOrder
-                P = reduce_order(P, reduceOrder)
+                #P = reduce_order(P, reduceOrder)
             end
             if LazySets.order(disc) > maxOrder
                 disc = reduce_order(disc, reduceOrder)

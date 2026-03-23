@@ -1,6 +1,6 @@
 using ReachabilityAnalysis, Plots, LazySets, BenchmarkTools, CSV, DataFrames, MathematicalPredicates
 
-include("models.jl")
+#include("models.jl")
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
 include("models/motor/motor_load.jl")
@@ -43,7 +43,7 @@ function RunCodeBFFPSV18(prob, alg, t, constraint)
     flag = true
     for i in 1:constraintAmount
         oneHotEncoding = zeros(constraintAmount)
-        oneHotEncoding[i] = 1.0   
+        oneHotEncoding[i] = 1.0
         flag &= ρ(oneHotEncoding, sol.F) <= constraint[i].b
     end
     return flag
@@ -90,7 +90,7 @@ function doBFFPSV18JuliaTest(load_func, name)
         res = RunCodeISS(prob, algCheck, t, constraint)
     elseif _name == "pde"
         res = RunCodePDE(prob, algCheck, t, constraint)
-    else 
+    else
         res = RunCodeBFFPSV18(prob, algCheck, t, constraint)
     end
     # Convert time to seconds from nanoseconds
@@ -100,7 +100,7 @@ function doBFFPSV18JuliaTest(load_func, name)
     end
 
     df = DataFrame(name=name, avgTime=mean(timeList), medianTime=median(timeList), success=res)
-    filename = "results/" * namePrint * "JuliaResults" * ".csv"
+    filename = "results/Report" * namePrint * "JuliaResults" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim=";", append=true)
@@ -118,7 +118,7 @@ names = ["beam", "building", "heat", "iss", "motor", "pde", "mna1", "mna5"]
 loadFuncs = [load_beam, load_building, load_heat_input, load_iss, load_motor, load_pde, load_mna1, load_mna5]
 
 for (name, load_func) in zip(names, loadFuncs)
-    #doBFFPSV18JuliaTest(load_func, name)
+    doBFFPSV18JuliaTest(load_func, name)
 end
 
 #doBFFPSV18JuliaTest(load_mna1, "mna1")

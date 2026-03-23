@@ -226,7 +226,7 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     sizehint!(inputDiscritezationDict, elems)
 
     constraintProjVectors = map(x -> x.a, constraint)
-    constraintProjBounds = ρ.(constraintProjVectors, constraint)
+    constraintProjBounds = map(x -> x.b, constraint)#ρ.(constraintProjVectors, constraint)#
 
     println(constraintProjVectors)
     println(constraintProjBounds)
@@ -248,13 +248,14 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     reachSet = Vector{Zonotope{N,Vector{N},Matrix{N}}}()
     timeStepRecorder = Vector{Float64}()
 
+    #println(discritezationDict[m].center)
 
     Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
     tempM = similar(Φ)
     ϕt = similar(Φ)
     newRR = copy(newR)
-
-
+    #lastV = Zonotope(zero(discritezationDict[m].center), [zero(discritezationDict[m].center)])
+    Ub = overapproximate(linear_map(B, U), Zonotope)
     while time < endtime
 
         attempts = 1
@@ -262,31 +263,33 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
         while !approveFlag
             if currentTimeStep < m
-                currentTimeStep = m
-                println(constraintProjBounds)
+                #currentTimeStep = m
+                #println(constraintProjBounds)
                 println(map(x -> ρ(x, newRR), constraintProjVectors))
-                return false
+                return reachSet, timeStepRecorder, attemptsRecorder
             end
 
             if changedTimeStep
                 newR = discritezationDict[currentTimeStep]
-                V = copy(inputDiscritezationDict[currentTimeStep])
+                #V = copy(inputDiscritezationDict[currentTimeStep])
                 ϕt = phiDict[currentTimeStep]
-                newRR = linear_map(Φ, newR)
-                V = linear_map(Φ, V)
+                newRR = linear_map(Φ, discritezationDict[currentTimeStep])
+                #V = linear_map(Φ, V)
             else
                 newRR = linear_map(ϕt, newRR)
-                V = linear_map(ϕt, V)
+                #V = linear_map(ϕt, V)
             end
-
+            V = linear_map(ReachabilityAnalysis.Exponentiation.Φ₁(A, time, alg, false, nothing), Ub)
             changedTimeStep = false
-            hom = map(x -> ρ(x, newRR), constraintProjVectors)
+            #hom = map(x -> ρ(x, newRR), constraintProjVectors)
             #println(hom)
             inhom = map(x -> ρ(x, V), constraintProjVectors)
 
-            if all((input + ρ(x, newRR)) - y <= 0.0 for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds)) #|| Digits == -1
+            if all((input + ρ(x, newRR)) < y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds)) || Digits == -1
                 approveFlag = true
-                Sρ += inhom
+                push!(reachSet, minkowski_sum(newRR, V)) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
+                Sρ = copy(inhom)
+
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM)
             else
@@ -303,7 +306,6 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
 
         push!(attemptsRecorder, attempts)
-        push!(reachSet, minkowski_sum(newRR, V)) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
         push!(timeStepRecorder, currentTimeStep)
 
         i = i + 1
@@ -331,6 +333,6 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
             end
         end
     end
-
+    println("Yes ", Sρ)
     return reachSet, timeStepRecorder, attemptsRecorder
 end

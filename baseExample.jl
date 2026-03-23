@@ -15,7 +15,7 @@ include("models/MNA5/mna5_load.jl")
 include("ReACT.jl")
 
 const μ = 0.001
-const STRATEGY = 2
+STRATEGY = 2
 
 initialTimeStep = 0.1
 Digits = 3
@@ -52,7 +52,7 @@ if plotOutput
         minVal = minimum(cornersToSearch)
         # Take min and max with constraint
         constraintValAdjusted = constraint[1].b * 1.1
-        maxVal = max(maxVal, constraintValAdjusted) 
+        maxVal = max(maxVal, constraintValAdjusted)
         minVal = min(minVal, constraintValAdjusted)
 
         p = plot(dpi=300, thickness_scaling=1, ylims=(minVal, maxVal))
@@ -68,24 +68,24 @@ if plotOutput
     for i in eachindex(shapes2)
         attemptCount = attemptsRecorder[i]
         if attemptCount == 1 # First attempt
-            plot!(p, shapes2[i], vars=(1,0), c=:green, alpha=:0.2, lab="")
+            plot!(p, shapes2[i], vars=(1, 0), c=:green, alpha=:0.2, lab="")
         elseif attemptCount == 2 # Second
-            plot!(p, shapes2[i], vars=(1,0), c=:yellow, alpha=:0.2, lab="") 
+            plot!(p, shapes2[i], vars=(1, 0), c=:yellow, alpha=:0.2, lab="")
         elseif attemptCount == 3 # Third
-            plot!(p, shapes2[i], vars=(1,0), c=:red, alpha=:0.2, lab="")
+            plot!(p, shapes2[i], vars=(1, 0), c=:red, alpha=:0.2, lab="")
         else # More than three attempts
-            plot!(p, shapes2[i], vars=(1,0), c=:red, alpha=:0.2, lab="")
+            plot!(p, shapes2[i], vars=(1, 0), c=:red, alpha=:0.2, lab="")
         end
     end
     ##
 
-if plotConstraint
-    if 0 < constraint[1].b
-        plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="constraint", c=:purple)
-    else
-        plot!(LazySets.HalfSpace([0.0, 1.0], constraint[1].b), lab="constraint", c=:purple)
+    if plotConstraint
+        if 0 < constraint[1].b
+            plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="constraint", c=:purple)
+        else
+            plot!(LazySets.HalfSpace([0.0, 1.0], constraint[1].b), lab="constraint", c=:purple)
+        end
     end
-end
 
     println("Amount of attempts: ", sum(attemptsRecorder))
     println("Unique timesteps ", unique(timesteps))

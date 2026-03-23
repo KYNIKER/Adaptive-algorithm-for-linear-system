@@ -23,7 +23,7 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     LazySets.load_expokit()
     println("Running benchmark for: ", name)
     #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
-    BenchmarkTools.DEFAULT_PARAMETERS.samples = 1
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
 
     # Actual run
     GC.gc()# Force garbage collection
@@ -68,7 +68,7 @@ function runBenchmarkv2(name, initialTimeStep, Digits, load_func, STRATEGY)
     LazySets.load_expokit()
     println("Running benchmark for: ", name)
     #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
-    BenchmarkTools.DEFAULT_PARAMETERS.samples = 1
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
 
     # Actual run
     GC.gc()# Force garbage collection
@@ -95,7 +95,7 @@ function runBenchmarkv2(name, initialTimeStep, Digits, load_func, STRATEGY)
     # Write to csv file
     df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, Digits=Digits, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs, timesteps=[uniqueTimesteps])
 
-    filename = "results/ReACTv2_" * name * "Results" * ".csv"
+    filename = "results/Report2ReACTv4_" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim=";", append=true)
@@ -135,15 +135,15 @@ runBenchmark("mna1", 1.0, 4, load_mna1, 1)
 GC.gc()
 =#
 # v2
-
-#runBenchmarkv2("ISS", (2.0)^6 * 10^-4, 4, load_iss, 1)
-#GC.gc()
-#runBenchmarkv2("beam", (2.0)^4 * 10^-5, 5, load_beam, 1)
-#GC.gc()
-
+#=
+runBenchmarkv2("ISS", (2.0)^6 * 10^-4, 4, load_iss, 1)
+GC.gc()
+runBenchmarkv2("beam", (2.0)^4 * 10^-5, 5, load_beam, 1)
+GC.gc()
+=#
 runBenchmarkv2("motor", (2.0)^3 * 10^-3, 3, load_motor, 1)
 GC.gc()
-
+#=
 runBenchmarkv2("pde", (2.0)^14 * 10^-4, 4, load_pde, 1)
 GC.gc()
 
@@ -155,7 +155,7 @@ GC.gc()
 
 runBenchmarkv2("mna1", (2.0)^13 * 10^-4, 4, load_mna1, 1)
 GC.gc()
-
+=#
 #runBenchmark("mna5", 0.2, 1, load_mna5, 1)
 #GC.gc()
 #runBenchmark(modelname, 0.0025, dig, model, 0)
