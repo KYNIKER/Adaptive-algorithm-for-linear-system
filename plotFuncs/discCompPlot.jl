@@ -26,11 +26,12 @@ const ∞ = Inf
 Digits = 3
 dm = 10.0^-Digits
 initialTimeStep = dm * 2^10
+#initialTimeStep = 0.25
 palette = Plots.palette(:cyclic_mrybm_35_75_c68_n256_s25, 2)
 LazySets.Comparison.set_tolerance(Float64)
 LazySets.Comparison.set_ztol(Float64, 1e-10)
-A, B, U, P₁, T, constraint, dimToPlot = load_beam()
-name = "beambig"
+A, B, U, P₁, T, constraint, dimToPlot = load_heat_input()
+name = "heatDiscComp"
 
 #T = [0, 5]
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=true, #ϵ=dm / 4,
@@ -57,16 +58,51 @@ constraintValAdjusted = constraint[1].b * 1.2
 maxVal = constraintValAdjusted #-∞ 
 minVal = constraintValAdjusted
 
-boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+#T = 0.5
+
+
+
+
+# boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+# shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
+# maxVal = max(maxVal1, maxVal)
+# minVal = min(minVal1, minVal)
+# println(minVal, " ", maxVal)
+
+# for i in eachindex(shapes1)
+#     plot!(p, shapes1[i], vars=(1, 0), c=palette[2],
+#         label=i == 1 ? L"\delta^{+} / \delta^- = %$initialTimeStep / %$dm" : "")
+# end
+
+initialTimeStep = initialTimeStep / 2^5
+boxes1, timesteps1, attemptsRecorder1 = PlotReACTIndividualDisc(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
 shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
 maxVal = max(maxVal1, maxVal)
 minVal = min(minVal1, minVal)
 println(minVal, " ", maxVal)
 
 for i in eachindex(shapes1)
+    plot!(p, shapes1[i], vars=(1, 0), c=:grey, alpha = 0.05,
+        label=i == 1 ? L"\delta^{+} / \delta^- = %$initialTimeStep / %$dm" : "")
+end
+
+println("Max timestep: $(maximum(timesteps1))")
+println("Min timestep: $(minimum(timesteps1))")
+
+initialTimeStep = dm * 2^10
+boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
+maxVal = max(maxVal1, maxVal)
+minVal = min(minVal1, minVal)
+println(minVal, " ", maxVal)
+
+
+
+for i in eachindex(shapes1)
     plot!(p, shapes1[i], vars=(1, 0), c=palette[2],
         label=i == 1 ? L"\delta^{+} / \delta^- = %$initialTimeStep / %$dm" : "")
 end
+
 
 #=
 initialTimeStep = 2
@@ -130,5 +166,5 @@ yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0"
 
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=palette[end], fillstyle=://)
 
-savefig(p, "plots/" * name * "Plot.pdf")
+savefig(p, "plots/" * name * ".pdf")
 plot(p)
