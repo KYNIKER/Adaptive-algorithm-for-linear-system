@@ -19,16 +19,18 @@ include("plotHelper.jl")
 include("../ReACT.jl")
 
 name = "BFFPSV18vsReACTBuilding"
-load_func = load_building
+load_func = load_heat_input
 A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
-#T = [0.0, 5.0]
+
 palette = Plots.palette(:fes10)
+c1 = palette[9]
+c2 = palette[6]
 LazySets.Comparison.set_tolerance(Float64)
 LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
-Digits = 10.0^-3
-initialTimeStep = Digits * 2^10
+Digits = 1e-4
+initialTimeStep = (2.0)^14 * 1e-4
 STRATEGY = 1
 
 boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
@@ -42,16 +44,11 @@ tVal = maximum(T)
 n = size(A, 1)
 
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
-#alg = LGG09(δ=2e-3, template=CustomDirections([sparsevec([25], [1.0], 48)]), approx_model=Forward())
 prob = InitialValueProblem(sys, P₁)
 
 sol = solve(prob; T=tVal,
-    alg=LGG09(; δ=0.004, vars=(25), n=48)) #solve(prob, alg; T=20.0) # Running the actual time
+    alg=BFFPSV18(δ=1e-3, vars=[133], partition=[i:i for i in 1:200]))
 
-#=
-sol = solve(prob; T=tVal,
-    alg=BFFPSV18(δ=2e-3, vars=[25], partition=[i:i for i in 1:48]))
-=#
 #sol.options[:plot_vars] = [0, 25]
 solution_proj = LazySets.project(sol, [dimToPlot])
 #res = mapreduce(c -> ρ(c.a, sol) <= c.b, &, constraint) # Check if hits constraint
@@ -72,21 +69,6 @@ p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
     xlims=(0, tVal), xlabel=L"Time", ylabel=L"x_{%$dimToPlot}")
 
 
-#=
-GLGMShapes = []
-fp = flowpipe(sol)
-for (i, Ω) in enumerate(fp)
-    currT = i * δ
-    proj = project(Ω, dimToPlot)
-    max = ρ([1.0], proj)
-    min = -ρ([-1.0], proj)
-    newShape = Shape([currT, currT + δ, currT + δ, currT], [min, min, max, max])
-    push!(GLGMShapes, newShape)
-end
-=#
-# Plotting 
-#p = plot(dpi=300, thickness_scaling=1, ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
-#p = plot(dpi=300, thickness_scaling=1, xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
 
 constraintValAdjusted = constraint[1].b * 1.1
 maxVal = max(maxVal1, constraintValAdjusted)
@@ -97,27 +79,16 @@ minVal = min(minVal1, constraintValAdjusted)
 ylims!((minVal, maxVal))
 yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0", string(constraint[1].b)])
 
-for i in eachindex(shapes1)
-    plot!(p, shapes1[i], color=palette[9], c=palette[9], la=0.0, alpha=1.0, lw=0.0,
-        label=i == 1 ? L"Alg.\: 3" : "")
-end
-plot!(p, flowpipe(solution_proj)[1], vars=(0, dimToPlot), color=palette[6], c=palette[6], la=0.1, alpha=1.0, lw=0.05, lab=L"LGG")
 
-plot!(p, solution_proj, vars=(0, dimToPlot), color=palette[6], c=palette[6], la=0.1, alpha=1.0, lw=0.05)
-#=
-for i in eachindex(GLGMShapes)
-    plot!(p, GLGMShapes[i], vars=(1, 0), color=palette[6], c=palette[6], la=0.1, alpha=1.0, lw=0.05,
-    label=i == 1 ? L"LGG" : "")
+plot!(p, flowpipe(solution_proj)[end], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0, lab=L"BFFPSV")
+plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0)
+for i in eachindex(shapes1)
+    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=1.0, lw=0.01,
+        label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
-=#
+
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
 xlims!((0, tVal))
 
 savefig(p, "plots/" * name * "Plot.pdf")
 plot(p)
-
-
-# println(sol)
-# # Plotting
-# plot(sol, vars=(1, 2), xlab="x", ylab="v", lw=0.5, color=:blue)
-# plot!(constraint, lw=0.5, color=:red)

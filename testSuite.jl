@@ -95,7 +95,7 @@ function runBenchmarkv2(name, initialTimeStep, Digits, load_func, STRATEGY)
     # Write to csv file
     df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, Digits=Digits, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs, timesteps=[uniqueTimesteps])
 
-    filename = "results/Report2ReACTv4_" * name * "Results" * ".csv"
+    filename = "results/Report2ReACTv5_" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim=";", append=true)
@@ -135,27 +135,27 @@ runBenchmark("mna1", 1.0, 4, load_mna1, 1)
 GC.gc()
 =#
 # v2
-#=
-runBenchmarkv2("ISS", (2.0)^6 * 10^-4, 4, load_iss, 1)
+
+runBenchmarkv2("ISS", (2.0)^6 * 6e-4, 6e-4, load_iss, 1)
 GC.gc()
-runBenchmarkv2("beam", (2.0)^4 * 10^-5, 5, load_beam, 1)
-GC.gc()
-=#
-runBenchmarkv2("motor", (2.0)^3 * 10^-3, 3, load_motor, 1)
-GC.gc()
-#=
-runBenchmarkv2("pde", (2.0)^14 * 10^-4, 4, load_pde, 1)
+runBenchmarkv2("beam", (2.0)^5 * 5e-5, 5e-5, load_beam, 1)
 GC.gc()
 
-runBenchmarkv2("building", (2.0)^10 * 10^-3, 3, load_building, 1)
+runBenchmarkv2("motor", (2.0)^4 * 1e-3, 1e-3, load_motor, 1)
 GC.gc()
 
-runBenchmarkv2("heatInput", (2.0)^14 * 10^-4, 4, load_heat_input, 1)
+runBenchmarkv2("pde", (2.0)^13 * 3e-4, 3e-4, load_pde, 1)
 GC.gc()
 
-runBenchmarkv2("mna1", (2.0)^13 * 10^-4, 4, load_mna1, 1)
+runBenchmarkv2("building", (2.0)^10 * 2e-3, 2e-3, load_building, 1)
 GC.gc()
-=#
+
+runBenchmarkv2("heatInput", (2.0)^11 * 1e-3, 1e-3, load_heat_input, 1)
+GC.gc()
+
+runBenchmarkv2("mna1", (2.0)^12 * 4e-4, 4e-4, load_mna1, 1)
+GC.gc()
+
 #runBenchmark("mna5", 0.2, 1, load_mna5, 1)
 #GC.gc()
 #runBenchmark(modelname, 0.0025, dig, model, 0)

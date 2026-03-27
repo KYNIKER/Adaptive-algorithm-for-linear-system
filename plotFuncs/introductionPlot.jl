@@ -24,14 +24,15 @@ STRATEGY = 1
 initialTimeStep = 0.8
 Digits = 1
 
-palette = Plots.palette(:cyclic_mrybm_35_75_c68_n256_s25, 5)
-
+palette = Plots.palette(:fes10)
+LazySets.Comparison.set_tolerance(Float64)
+LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 
 A = [0. 1.;
     -2.5 0.]
 P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])
-constraint = LazySets.HalfSpace(-[0., 1.], -1.65)
+constraint = LazySets.HalfSpace(-[0., 1.], 1.65)
 T = [0, 8]
 dimToPlot = 2
 # No input
@@ -42,9 +43,10 @@ U = Zonotope(zeros(dim(P₁)), [zeros(dim(P₁))])
 
 constraint = isa(constraint, Array) ? constraint : [constraint]
 
-boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep / 2^3, STRATEGY)
 #println(boxes1)
-shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
+shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, 2)
+# shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
 
 #println("Finished simulations")
 
@@ -54,14 +56,15 @@ initialTimeStep = 0.1
 
 println("Starting second simulation with timestep size: ", initialTimeStep)
 
-boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, -1, STRATEGY)
-shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
+boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, STRATEGY)
+shapes2, maxVal2, minVal2 = plotProjectedFlowpipe(boxes2, timesteps2, 0, 2)
+#shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
 
 initialTimeStep = 0.4
 
 println("Starting third simulation with timestep size: ", initialTimeStep)
 
-boxes3, timesteps3, attemptsRecorder3 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, -1, STRATEGY)
+boxes3, timesteps3, attemptsRecorder3 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, STRATEGY)
 shapes3, maxVal3, minVal3 = getShapes(boxes3, timesteps3)
 
 
@@ -80,19 +83,19 @@ minVal = min(minVal1, minVal2, minVal3, constraintValAdjusted)
 
 
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
-    legendfont=font(8, "Times"),
+    legendfont=font(12, "Times"),
     #legendcolumn=-1,
     #legend_position=:outertop,
     tickfont=font(8, "Times"),
-    xguidefont=font(25, "Times"),
-    yguidefont=font(25, "Times"),
-    xtick=([0, 8], ["0", "T"]),
+    xguidefont=font(12, "Times"),
+    yguidefont=font(12, "Times"),
+    xtick=([0, 8], [L"0", L"T"]),
     ytick=([], []),
     bottom_margin=2mm,
     left_margin=5mm,
     right_margin=5mm,
     top_margin=2mm,
-    ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
+    ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel=L"Time", ylabel=L"x")
 
 #=
 for i in eachindex(shapes4)
@@ -107,10 +110,10 @@ end
 =#
 for i in eachindex(shapes1)
     if i == 1
-        plot!(p, shapes1[i], vars=(1, 0), c=palette[2], alpha=alp,
-            label="ReACT")
+        plot!(p, shapes1[i], vars=(1, 0), c=palette[9], alpha=1.0, lw=0.05,
+            label=L"Adaptive")
     else
-        plot!(p, shapes1[i], vars=(1, 0), c=palette[2], alpha=alp,
+        plot!(p, shapes1[i], vars=(1, 0), c=palette[9], alpha=1.0, lw=0.05,
             label="")
     end
 end
@@ -127,10 +130,10 @@ end
 =#
 for i in eachindex(shapes2)
     if i == 1
-        plot!(p, shapes2[i], vars=(1, 0), c=palette[4], alpha=alp,
-            label=L"\delta = 0.1")
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=alp, lw=0.0, fa=0.0,
+            label=L"Fixed")
     else
-        plot!(p, shapes2[i], vars=(1, 0), c=palette[4], alpha=alp,
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=alp, lw=0.0, fa=0.0,
             label="")
     end
 end
@@ -146,7 +149,7 @@ end
 
 # Plot constraint
 
-plot!(LazySets.HalfSpace(constraint[1].a, constraint[1].b), lab=(L"\mathcal{X}_\bot"), c=palette[5], fillstyle=://)
+plot!(LazySets.HalfSpace(-constraint[1].a, -constraint[1].b), lab=(L"\mathcal{X}_\bot"), alpha=1.0, fillstyle=:/)
 
 
 
