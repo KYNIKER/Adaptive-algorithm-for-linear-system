@@ -27,6 +27,7 @@ Manifest*.toml
 LocalPreferences.toml
 JuliaLocalPreferences.toml
 
-# Results
+# Extra folders
 results/*
+plots/*
 !.gitkeep

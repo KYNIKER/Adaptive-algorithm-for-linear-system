@@ -2,7 +2,7 @@ using LazySets, LinearAlgebra, Plots
 
 ## Most of these are no longer used
 ## This file is solely used for plotting, 
-## and is not important for ReACT
+## and is not important for the main algorithm
 
 function rectangleFromHBox(res::AbstractVector{Shape}, corners)
     for i in 1:size(corners, 1)

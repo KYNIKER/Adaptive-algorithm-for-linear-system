@@ -1,5 +1,4 @@
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, CSV, DataFrames, Expokit, ReachabilityAnalysis
-#include("helperfunctions.jl")
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
 include("models/motor/motor_load.jl")
@@ -10,16 +9,12 @@ include("models/beam/beam_load.jl")
 include("models/FOM/fom_load.jl")
 include("models/MNA1/mna1_load.jl")
 include("models/MNA5/mna5_load.jl")
-#include("CegarFunctions.jl")
-#include("CegarInhomogenous.jl")
 include("ReACT.jl")
 include("ReACTv2.jl")
-#names = ["beam", "building", "fom", "heat", "iss", "motor", "pde"]
-#fileLoads = [load_beam, load_building, load_fom, load_heat_input, load_iss, load_motor, load_pde]
 
 
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
-function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
+function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     LazySets.load_expokit()
     println("Running benchmark for: ", name)
     #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
@@ -29,7 +24,7 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     GC.gc()# Force garbage collection
     A, B, ballβ, P₁, T, constraint, _ = load_func() # load
 
-    b = @benchmarkable _ = ReACT($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits, $STRATEGY)
+    b = @benchmarkable _ = ReACT($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $δ⁻, $STRATEGY)
 
     #tune!(b; verbose=true) # Tune to find the optimal samples/evals
     #println("tuned!")
@@ -42,13 +37,11 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
         push!(timeList, timeVal / 1e9)
     end
 
-    # Get timesteps
-    timesteps = [0.0] #cegarInputSystemOnlyTiming(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 
-    isSuccess = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY) # Check if we reach the end
-    uniqueTimesteps = unique(timesteps)
+    isSuccess = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY) # Check if we reach the end
+
     # Write to csv file
-    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, Digits=Digits, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs, timesteps=[uniqueTimesteps])
+    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, δ⁻=δ⁻, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs)
 
     filename = "results/ReACT_" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
@@ -64,7 +57,7 @@ function runBenchmark(name, initialTimeStep, Digits, load_func, STRATEGY)
     println("Completed run for: ", name)
 end
 
-function runBenchmarkv2(name, initialTimeStep, Digits, load_func, STRATEGY)
+function runBenchmarkv2(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     LazySets.load_expokit()
     println("Running benchmark for: ", name)
     #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
@@ -74,7 +67,7 @@ function runBenchmarkv2(name, initialTimeStep, Digits, load_func, STRATEGY)
     GC.gc()# Force garbage collection
     A, B, ballβ, P₁, T, constraint, _ = load_func() # load
 
-    b = @benchmarkable _ = ReACTWithSupport($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $Digits, $STRATEGY)
+    b = @benchmarkable _ = ReACTWithSupport($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $δ⁻, $STRATEGY)
 
     #tune!(b; verbose=true) # Tune to find the optimal samples/evals
     #println("tuned!")
@@ -87,13 +80,11 @@ function runBenchmarkv2(name, initialTimeStep, Digits, load_func, STRATEGY)
         push!(timeList, timeVal / 1e9)
     end
 
-    # Get timesteps
-    timesteps = [0.0] #cegarInputSystemOnlyTiming(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
 
-    isSuccess = ReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY) # Check if we reach the end
-    uniqueTimesteps = unique(timesteps)
+    isSuccess = ReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY) # Check if we reach the end
+
     # Write to csv file
-    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, Digits=Digits, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs, timesteps=[uniqueTimesteps])
+    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, δ⁻=δ⁻, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs)
 
     filename = "results/Report2ReACTv5_" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
@@ -109,31 +100,28 @@ function runBenchmarkv2(name, initialTimeStep, Digits, load_func, STRATEGY)
     println("Completed run for: ", name)
 end
 
-#runBenchmark("FOM", 0.5, 5, load_fom, 2)
-#=modelname = "heat"
-model = load_heat_input
-dig = 1
-GC.gc()=#
-#=
-runBenchmark("ISS", 0.01, 4, load_iss, 1)
+# v1
+
+runBenchmark("ISS", (2.0)^6 * 6e-4, 6e-4, load_iss, 1)
 GC.gc()
-runBenchmark("beam", 0.002, 4, load_beam, 1)
+runBenchmark("beam", (2.0)^5 * 5e-5, 5e-5, load_beam, 1)
 GC.gc()
 
-runBenchmark("pde", 0.5, 4, load_pde, 1)
+runBenchmark("motor", (2.0)^4 * 1e-3, 1e-3, load_motor, 1)
 GC.gc()
 
-runBenchmark("motor", 0.5, 3, load_motor, 1)
-GC.gc()
-runBenchmark("building", 0.5, 3, load_building, 1)
+runBenchmark("pde", (2.0)^13 * 3e-4, 3e-4, load_pde, 1)
 GC.gc()
 
-runBenchmark("heatInput", 0.5, 4, load_heat_input, 1)
+runBenchmark("building", (2.0)^10 * 2e-3, 2e-3, load_building, 1)
 GC.gc()
 
-runBenchmark("mna1", 1.0, 4, load_mna1, 1)
+runBenchmark("heatInput", (2.0)^11 * 1e-3, 1e-3, load_heat_input, 1)
 GC.gc()
-=#
+
+runBenchmark("mna1", (2.0)^12 * 4e-4, 4e-4, load_mna1, 1)
+GC.gc()
+
 # v2
 
 runBenchmarkv2("ISS", (2.0)^6 * 6e-4, 6e-4, load_iss, 1)

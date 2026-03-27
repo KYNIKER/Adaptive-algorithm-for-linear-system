@@ -13,7 +13,6 @@ include("../models/beam/beam_load.jl")
 include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("../models/MNA5/mna5_load.jl")
-#include("CegarFunctions.jl")
 include("../ReACT.jl")
 include("plotHelper.jl")
 
@@ -59,9 +58,6 @@ minVal = constraintValAdjusted
 
 boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, dm1, STRATEGY)
 shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
-maxVal = max(maxVal1, maxVal)
-minVal = min(minVal1, minVal)
-println(minVal, " ", maxVal)
 
 
 dm2 = initialTimeStep / 2^3
@@ -69,8 +65,7 @@ dm2 = initialTimeStep / 2^3
 boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, dm2, STRATEGY)
 shapes2, maxVal2, minVal2 = plotProjectedFlowpipe(boxes2, timesteps2, 0, dimToPlot; approx=true)
 
-maxVal = max(maxVal2, maxVal)
-minVal = min(minVal2, minVal)
+
 
 for i in eachindex(shapes1)
     plot!(p, shapes1[i], vars=(1, 0), c=palette[9], la=0.0, alpha=0.7, lw=0.0,

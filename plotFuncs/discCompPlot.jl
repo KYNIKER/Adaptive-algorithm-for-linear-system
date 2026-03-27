@@ -77,7 +77,7 @@ minVal = constraintValAdjusted
 # end
 
 initialTimeStep = initialTimeStep / 2^5
-boxes1, timesteps1, attemptsRecorder1 = PlotReACTIndividualDisc(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+boxes1, timesteps1, attemptsRecorder1 = PlotReACTIndividualDisc(A, B, initialTimeStep, T, P₁, U, constraint, dm, STRATEGY)
 shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
 maxVal = max(maxVal1, maxVal)
 minVal = min(minVal1, minVal)

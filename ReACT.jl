@@ -1,17 +1,17 @@
 using LazySets, LinearAlgebra
 include("ReACTDiscretize.jl")
 
-function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
+function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
 
-    m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    m = copy(δ⁻)
     changedTimeStep = true
-    elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+    #elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
     phiDict = Dict{Float64,Matrix{Float64}}()
-    sizehint!(phiDict, elems)
+    #sizehint!(phiDict, elems)
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    sizehint!(discritezationDict, elems)
+    #sizehint!(discritezationDict, elems)
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    sizehint!(inputDiscritezationDict, elems)
+    #sizehint!(inputDiscritezationDict, elems)
 
     constraintProjVectors = map(x -> x.a, constraint)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)
@@ -36,6 +36,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     ϕt = similar(Φ)
     newRR = copy(newR)
 
+    # Main simulation loop
 
     while time < endtime
 
@@ -107,17 +108,18 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     return true
 end
 
-function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
+#  React with no input
+function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     XG = copy(genmat(X0))
     XDim, _ = size(XG)
-    m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    m = copy(δ⁻)
     changedTimeStep = true
 
-    elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+    #elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
     phiDict = Dict{Float64,Matrix{Float64}}()
-    sizehint!(phiDict, elems)
+    #sizehint!(phiDict, elems)
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    sizehint!(discritezationDict, elems)
+    #sizehint!(discritezationDict, elems)
 
     discritezationDict, _, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
 
@@ -148,7 +150,6 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
         while !approveFlag
             if currentTimeStep < m
-                println(time)
                 return false
             end
 
@@ -206,6 +207,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     return true
 end
 
+# This is solely used for plotting, not benchmarking
 function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     m = copy(δ⁻)
     # Override for 1 timestep system for plotting
@@ -222,8 +224,6 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     constraintProjVectors = map(x -> x.a, constraint)
     constraintProjBounds = map(x -> x.b, constraint)#ρ.(constraintProjVectors, constraint)#
 
-    println(constraintProjVectors)
-    println(constraintProjBounds)
 
     discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
 
@@ -233,7 +233,6 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     currentTimeStep = copy(initialTimeStep)
 
     attemptsRecorder = Integer[]
-
     V::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
     Sρ = zeros(Float64, length(constraint))
     newR::Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
@@ -259,7 +258,6 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
             if currentTimeStep < m
                 #currentTimeStep = m
                 #println(constraintProjBounds)
-                println(map(x -> ρ(x, newRR), constraintProjVectors))
                 return reachSet, timeStepRecorder, attemptsRecorder
             end
 
@@ -327,35 +325,28 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
             end
         end
     end
-    println("Yes ", Sρ)
     return reachSet, timeStepRecorder, attemptsRecorder
 end
 
-function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, Digits::Integer, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
+# This shows off our approach with spaceex discretization. Also only for plotting
+function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     # Here we use typical spaceex discretization for each timestep size
 
-    m = 0
-    # Override for 1 timestep system for plotting
-    if Digits == -1
-        m = initialTimeStep
-    else
-        m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
-    end
+    m = copy(δ⁻)
+
     #m = initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
-    elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+    #elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
     phiDict = Dict{Float64,Matrix{Float64}}()
-    sizehint!(phiDict, elems)
+    #sizehint!(phiDict, elems)
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    sizehint!(discritezationDict, elems)
+    #sizehint!(discritezationDict, elems)
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    sizehint!(inputDiscritezationDict, elems)
+    #sizehint!(inputDiscritezationDict, elems)
 
     constraintProjVectors = map(x -> x.a, constraint)
     constraintProjBounds = map(x -> x.b, constraint)#ρ.(constraintProjVectors, constraint)#
 
-    println(constraintProjVectors)
-    println(constraintProjBounds)
 
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
@@ -364,7 +355,6 @@ function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N
     tempU = linear_map(B, U) #overapproximate(concretize(B * U), Zonotope)
     d = m
     while d <= initialTimeStep
-        println("Doing disc for size $d")
         let ϕ::Matrix{Float64} = ReachabilityAnalysis.Exponentiation._exp(A, d, alg)
             tempM = similar(ϕ)
 
@@ -391,7 +381,6 @@ function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N
             d *= 2
         end
     end
-    println("Finished Dicts!")
 
     #    discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
 
@@ -427,7 +416,6 @@ function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N
             if currentTimeStep < m
                 #currentTimeStep = m
                 #println(constraintProjBounds)
-                println(map(x -> ρ(x, newRR), constraintProjVectors))
                 return reachSet, timeStepRecorder, attemptsRecorder
             end
 
@@ -447,7 +435,7 @@ function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N
             #println(hom)
             inhom = map(x -> ρ(x, V), constraintProjVectors)
 
-            if all((input + ρ(x, newRR)) < y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds)) || Digits == -1
+            if all((input + ρ(x, newRR)) < y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))
                 approveFlag = true
                 push!(reachSet, minkowski_sum(newRR, V)) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
                 Sρ = copy(inhom)
@@ -495,6 +483,5 @@ function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N
             end
         end
     end
-    println("Yes ", Sρ)
     return reachSet, timeStepRecorder, attemptsRecorder
 end

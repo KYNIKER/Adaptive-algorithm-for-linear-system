@@ -17,8 +17,8 @@ include("ReACT.jl")
 const μ = 0.001
 STRATEGY = 2
 
-initialTimeStep = 0.1
-Digits = 3
+δ⁻ = 0.001
+initialTimeStep = δ⁻ * 2^10
 plotConstraint = true
 plotOutput = true
 
@@ -28,13 +28,12 @@ A, B, ballβ, P₁, T, constraint, dimToPlot = load_building()
 constraint = isa(constraint, Array) ? constraint : [constraint]
 
 ###
-println("initialTimeStep: ", initialTimeStep)
 
-res = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
-println(res)
+res = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY)
+println("Successful simulation?: ", res)
 
 if plotOutput
-    boxes2, timesteps, attemptsRecorder = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
+    boxes2, timesteps, attemptsRecorder = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY)
     corners2 = Vector(undef, size(boxes2, 1))
 
     begin
@@ -81,9 +80,9 @@ if plotOutput
 
     if plotConstraint
         if 0 < constraint[1].b
-            plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="constraint", c=:purple)
+            plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="constraint", c=:black, fillstyle=:/)
         else
-            plot!(LazySets.HalfSpace([0.0, 1.0], constraint[1].b), lab="constraint", c=:purple)
+            plot!(LazySets.HalfSpace([0.0, 1.0], constraint[1].b), lab="constraint", c=:black, fillstyle=:/)
         end
     end
 

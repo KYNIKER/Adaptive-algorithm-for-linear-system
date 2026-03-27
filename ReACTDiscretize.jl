@@ -51,9 +51,6 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
             d = d * 2
         end
         if maxOrder > 0
-            if LazySets.order(P) > maxOrder
-                #P = reduce_order(P, reduceOrder)
-            end
             if LazySets.order(disc) > maxOrder
                 disc = reduce_order(disc, reduceOrder)
             end

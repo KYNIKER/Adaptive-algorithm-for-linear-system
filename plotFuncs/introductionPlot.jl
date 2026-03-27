@@ -152,6 +152,5 @@ end
 plot!(LazySets.HalfSpace(-constraint[1].a, -constraint[1].b), lab=(L"\mathcal{X}_\bot"), alpha=1.0, fillstyle=:/)
 
 
-
+savefig(p, "plots/" * "Introduction.pdf")
 plot(p)
-savefig(p, "Introduction.pdf")

@@ -12,7 +12,7 @@ To start use the [base example](baseExample.jl) which produces a plot using ReAC
 To run the SLICOT benchmarks go to [testSuite](testSuite.jl), which can be adapted further.
 Additionally you can also run benchmarks for [LGG](LGG09Test.jl) and [BFFPSV](BFFPSV18Test.jl).
 
-Notably there exists ReACT and ReACTv2. Where ReACTv2 uses support functions more than ReACT. 
+Notably there exists ReACT and ReACTv2. Where ReACTv2 is the one featured in our paper. ReACT is similar to ReACTv2 but uses Zonotopes for the homogenous solution. For plots we use ReACT, not ReACTv2.
 
 ## Authors
 This repository has been made by:
