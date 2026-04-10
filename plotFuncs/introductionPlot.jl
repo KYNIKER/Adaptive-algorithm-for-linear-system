@@ -1,9 +1,8 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, FastExpm, Profile, PProf
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, Plots.PlotMeasures, LaTeXStrings
 
 
 include("../helperfunctions.jl")
-include("../models.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
 include("../models/motor/motor_load.jl")
@@ -15,31 +14,39 @@ include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("../models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
-include("../CegarInhomogenous.jl")
+include("../ReACT.jl")
 include("plotHelper.jl")
 
 
 # We load a simple coswave
-const μ = 0.
-const STRATEGY = 2
+STRATEGY = 1
 
 initialTimeStep = 0.8
-Digits = 5
+Digits = 1
 
+palette = Plots.palette(:fes10)
+LazySets.Comparison.set_tolerance(Float64)
+LazySets.Comparison.set_ztol(Float64, 1e-10)
+alp = 0.7
 
-A, P₁, constraint, T, dimToPlot= loadCosWave()
-
-
+A = [0. 1.;
+    -2.5 0.]
+P₁ = Zonotope([0., 1.5], [[0.0; 0.05]])
+constraint = LazySets.HalfSpace(-[0., 1.], 1.65)
+T = [0, 8]
+dimToPlot = 2
 # No input
-B = [1.0; 1.0;;]
-#U = LazySets.Zonotope([0], [[1]])
-U :: Zonotope = BallInf([0.0], 0.0)
+B = diagm([0.0, 0.0])
+U = Zonotope(zeros(dim(P₁)), [zeros(dim(P₁))])
+#U::Zonotope = BallInf([0.0], 0.0)
 
 
 constraint = isa(constraint, Array) ? constraint : [constraint]
 
-boxes1, timesteps1, attemptsRecorder1 = cegarInputSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
-shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
+boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep / 2^3, STRATEGY)
+#println(boxes1)
+shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, 2)
+# shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
 
 #println("Finished simulations")
 
@@ -49,41 +56,101 @@ initialTimeStep = 0.1
 
 println("Starting second simulation with timestep size: ", initialTimeStep)
 
-boxes2, timesteps2, attemptsRecorder2 = OneTimeStepSystem(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
-shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
+boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, STRATEGY)
+shapes2, maxVal2, minVal2 = plotProjectedFlowpipe(boxes2, timesteps2, 0, 2)
+#shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
+
+initialTimeStep = 0.4
+
+println("Starting third simulation with timestep size: ", initialTimeStep)
+
+boxes3, timesteps3, attemptsRecorder3 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, STRATEGY)
+shapes3, maxVal3, minVal3 = getShapes(boxes3, timesteps3)
 
 
+initialTimeStep = 0.8
+#=
+println("Starting fourth simulation with timestep size: ", initialTimeStep)
+
+boxes4, timesteps4, attemptsRecorder4 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, -1, STRATEGY)
+shapes4, maxVal4, minVal4 = getShapes(boxes4, timesteps4; bounds=[-constraint[1].b, 5.0])
+=#
 println("Finished simulations")
 
-constraintValAdjusted = constraint[1].b * 1.1
-maxVal = max(maxVal1, maxVal2, constraintValAdjusted) 
-minVal = min(minVal1, minVal2, constraintValAdjusted)
+constraintValAdjusted = -constraint[1].b * 1.2
+maxVal = max(maxVal1, maxVal2, maxVal3, constraintValAdjusted)
+minVal = min(minVal1, minVal2, minVal3, constraintValAdjusted)
 
 
-p = plot(dpi=300, thickness_scaling=1, ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
+p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
+    legendfont=font(12, "Times"),
+    #legendcolumn=-1,
+    #legend_position=:outertop,
+    tickfont=font(8, "Times"),
+    xguidefont=font(12, "Times"),
+    yguidefont=font(12, "Times"),
+    xtick=([0, 8], [L"0", L"T"]),
+    ytick=([], []),
+    bottom_margin=2mm,
+    left_margin=5mm,
+    right_margin=5mm,
+    top_margin=2mm,
+    ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel=L"Time", ylabel=L"x")
 
-
+#=
+for i in eachindex(shapes4)
+    if i == 1
+        plot!(p, shapes4[i], vars=(1, 0), c=palette[1], alpha=alp,
+            label="Pseudo")
+    else
+        plot!(p, shapes4[i], vars=(1, 0), c=palette[1], alpha=alp,
+            label="")
+    end
+end
+=#
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], vars=(1,0), c=:forestgreen, alpha=:0.2,
-        label = i == 1 ? "ReACT" : "")
+    if i == 1
+        plot!(p, shapes1[i], vars=(1, 0), c=palette[9], alpha=1.0, lw=0.05,
+            label=L"Adaptive")
+    else
+        plot!(p, shapes1[i], vars=(1, 0), c=palette[9], alpha=1.0, lw=0.05,
+            label="")
+    end
+end
+#=
+for i in eachindex(shapes3)
+    if i == 1
+        plot!(p, shapes3[i], vars=(1, 0), c=palette[3], alpha=alp,
+            label=L"\delta =0.4")
+    else
+        plot!(p, shapes3[i], vars=(1, 0), c=palette[3], alpha=alp,
+            label="")
+    end
+end
+=#
+for i in eachindex(shapes2)
+    if i == 1
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=alp, lw=0.0, fa=0.0,
+            label=L"Fixed")
+    else
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=alp, lw=0.0, fa=0.0,
+            label="")
+    end
 end
 
-for i in eachindex(shapes2)
-    plot!(p, shapes2[i], vars=(1,0), c=:blue, alpha=:0.2,
-        label = i == 1 ? "Fixed Timestep" : "")
-end
+
 
 # Plot real coswave
-ω = sqrt(2.5)
-t = 0:0.01:10
-x1 = 1.5 .* cos.(ω .* t)
+#ω = sqrt(2.5)
+#t = 0:0.01:10
+#x1 = 1.5 .* cos.(ω .* t)
 
-plot!(p, t, x1, label="Cos(t)", c=:red)
+#plot!(p, t, x1, label="Cos(t)", c=:red)
 
 # Plot constraint
 
-plot!(LazySets.HalfSpace([0.0, 1.0], constraint[1].b), lab="Unsafe Region", c=:black)
+plot!(LazySets.HalfSpace(-constraint[1].a, -constraint[1].b), lab=(L"\mathcal{X}_\bot"), alpha=1.0, fillstyle=:/)
 
 
-
+savefig(p, "plots/" * "Introduction.pdf")
 plot(p)

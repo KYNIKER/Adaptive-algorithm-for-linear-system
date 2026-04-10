@@ -13,6 +13,7 @@ include("../models/beam/beam_load.jl")
 include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("../models/MNA5/mna5_load.jl")
+#include("CegarFunctions.jl")
 include("../ReACT.jl")
 include("plotHelper.jl")
 
@@ -22,14 +23,17 @@ include("plotHelper.jl")
 #const STRATEGY = 2
 const ∞ = Inf
 
-
-initialTimeStep = 10.0^-3 * 2
-dm1 = initialTimeStep / 2
-palette = Plots.palette(:fes10)
+Digits = 3
+dm = 10.0^-Digits
+initialTimeStep = dm * 2^10
+#initialTimeStep = 0.25
+palette = Plots.palette(:fes10) #Plots.palette(:cyclic_mrybm_35_75_c68_n256_s25, 2)
+c1 = palette[9]
+c2 = palette[6]
 LazySets.Comparison.set_tolerance(Float64)
 LazySets.Comparison.set_ztol(Float64, 1e-10)
-A, B, U, P₁, T, constraint, dimToPlot = load_building()
-name = "buildingDelta"
+A, B, U, P₁, T, constraint, dimToPlot = load_heat_input()
+name = "heatDiscComp"
 
 #T = [0, 5]
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=true, #ϵ=dm / 4,
@@ -56,28 +60,67 @@ constraintValAdjusted = constraint[1].b * 1.2
 maxVal = constraintValAdjusted #-∞ 
 minVal = constraintValAdjusted
 
-boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, dm1, STRATEGY)
+#T = 0.5
+
+
+
+
+# boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+# shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
+# maxVal = max(maxVal1, maxVal)
+# minVal = min(minVal1, minVal)
+# println(minVal, " ", maxVal)
+
+# for i in eachindex(shapes1)
+#     plot!(p, shapes1[i], vars=(1, 0), c=palette[2],
+#         label=i == 1 ? L"\delta^{+} / \delta^- = %$initialTimeStep / %$dm" : "")
+# end
+
+initialTimeStep = initialTimeStep / 2^5
+boxes1, timesteps1, attemptsRecorder1 = PlotReACTIndividualDisc(A, B, initialTimeStep, T, P₁, U, constraint, dm, STRATEGY)
 shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
-
-
-dm2 = initialTimeStep / 2^3
-
-boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, dm2, STRATEGY)
-shapes2, maxVal2, minVal2 = plotProjectedFlowpipe(boxes2, timesteps2, 0, dimToPlot; approx=true)
-
-
+maxVal = max(maxVal1, maxVal)
+minVal = min(minVal1, minVal)
+println(minVal, " ", maxVal)
 
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], vars=(1, 0), c=palette[9], la=0.0, alpha=0.7, lw=0.0,
-        label=i == 1 ? L"\delta^{+} / \delta^- = %$initialTimeStep / %$dm1" : "")
+    plot!(p, shapes1[i], vars=(1, 0), c=c2, la=0.0, alpha=1.0, lw=0.0,
+        label=i == 1 ? L"Alg.\: 1" : "")
 end
+
+println("Max timestep: $(maximum(timesteps1))")
+println("Min timestep: $(minimum(timesteps1))")
+
+initialTimeStep = dm * 2^10
+boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, dm, STRATEGY)
+shapes2, maxVal2, minVal2 = plotProjectedFlowpipe(boxes2, timesteps2, 0, dimToPlot; approx=true)
+maxVal = max(maxVal2, maxVal)
+minVal = min(minVal2, minVal)
+println(minVal, " ", maxVal)
+
+
 
 for i in eachindex(shapes2)
-    plot!(p, shapes2[i], vars=(1, 0), c=palette[6], la=0.0, alpha=0.7, lw=0.0,
-        label=i == 1 ? L"\delta^{+} / \delta^- = %$initialTimeStep / %$dm2" : "")
+    plot!(p, shapes2[i], vars=(1, 0), c=c1, la=0.1, alpha=1.0, lw=0.05,
+        label=i == 1 ? L"Alg.\: 2" : "")
 end
 
+
 #=
+initialTimeStep = 2
+
+boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, Digits, STRATEGY)
+shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
+
+maxVal = max(maxVal2, maxVal)
+minVal = min(minVal2, minVal)
+
+
+for i in eachindex(shapes2)
+    plot!(p, shapes2[i], vars=(1, 0), c=:blue, alpha=:0.2,
+        label=i == 1 ? "δ⁺ = " * string(initialTimeStep) : "")
+end
+
 
 initialTimeStep = 8
 
@@ -96,7 +139,6 @@ println("Finished simulations")
 
 ylims!((minVal, maxVal))
 yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0", string(constraint[1].b)])
-#xlims!(0, maxVal)
 
 
 
@@ -123,7 +165,8 @@ yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0"
 # x0 = P₁.center
 # println(x0)
 
-plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
+plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab=L"\mathcal{X}_\bot", c=:black, fillstyle=:/)
+xlims!(0, maximum(T))
 
-savefig(p, "plots/" * name * "Plot.pdf")
+savefig(p, "plots/" * name * ".pdf")
 plot(p)

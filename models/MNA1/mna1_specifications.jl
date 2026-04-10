@@ -6,7 +6,7 @@ function mna1_specification()
                         high=[fill(0.0015, 2); zeros(576)])
 
     # safety property: x1 ≤ 0.5
-    property = HalfSpace(sparsevec([1], [1.0], 578), 0.5)
+    property = LazySets.HalfSpace(sparsevec([1], [1.0], 578), 0.5)
 
     # time horizon: 20 time units
     time_horizon = 20.0

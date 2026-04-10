@@ -27,10 +27,7 @@ Manifest*.toml
 LocalPreferences.toml
 JuliaLocalPreferences.toml
 
-# Model files
-JLD2_Files/*
-!JLD2_Files/.gitkeep
-
-# Results
+# Extra folders
 results/*
-results/.gitkeep
+plots/*
+!.gitkeep
