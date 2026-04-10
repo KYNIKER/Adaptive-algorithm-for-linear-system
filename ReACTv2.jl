@@ -1,16 +1,16 @@
 using LazySets, LinearAlgebra
 
-function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=0, reduceOrder::Int=5) where {N}
+function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     #XDim, _ = size(genmat(X0))
     m = δ⁻#initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
-    #elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
-    phiDict = Dict()#Dict{Float64,Matrix{Float64}}()
-    #sizehint!(phiDict, elems)
-    discritezationDict = Dict()#Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    #sizehint!(discritezationDict, elems)
-    inputDiscritezationDict = Dict()#Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    #sizehint!(inputDiscritezationDict, elems)
+    elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(m)) - 1)
+    phiDict = Dict{Float64,Matrix{Float64}}()
+    sizehint!(phiDict, elems)
+    discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(discritezationDict, elems)
+    inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(inputDiscritezationDict, elems)
 
     constraintProjVectors = map(x -> x.a, constraint)
     oldConstraintProjVectors = copy(constraintProjVectors)
