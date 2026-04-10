@@ -5,7 +5,7 @@ ReACT is a reachability algorithm for linear time invarient systems.
 It introduces variable time steps and a new discretization technique found [Here.](ReACTDiscretize.jl)
 
 ## Usage
-To use ReACT install a julia interpreter found [here][https://julialang.org/downloads/] and install the relevant packages by running [the setup file][setupLibraries.jl]
+To use ReACT install a julia interpreter found [here](https://julialang.org/downloads/) and install the relevant packages by running [the setup file](setupLibraries.jl)
 
 To start use the [base example](baseExample.jl) which produces a plot using ReACT.
 
