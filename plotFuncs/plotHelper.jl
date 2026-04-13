@@ -64,8 +64,8 @@ end
 
 function plotProjectedFlowpipe(boxes2, timesteps, dim1, dim2; approx=true)
     corners2 = Vector(undef, size(boxes2, 1))
-    maxval = -∞
-    minval = ∞
+    maxval = -Inf
+    minval = Inf
     k = 0
     if approx
         if dim1 != 0
