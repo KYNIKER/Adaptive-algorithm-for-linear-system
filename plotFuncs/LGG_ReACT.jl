@@ -29,8 +29,8 @@ LazySets.Comparison.set_tolerance(Float64)
 LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
-Digits = 2e-3
-initialTimeStep = (2.0)^9 * 2e-3
+Digits = 1e-3
+initialTimeStep = (2.0)^10 * 1e-3
 STRATEGY = 1
 
 boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
@@ -48,7 +48,7 @@ sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
 prob = InitialValueProblem(sys, P₁)
 
 sol = solve(prob; T=tVal,
-    alg=LGG09(; δ=0.004, vars=(25), n=48)) #solve(prob, alg; T=20.0) # Running the actual time
+    alg=LGG09(; δ=0.002, vars=(25), n=48)) #solve(prob, alg; T=20.0) # Running the actual time
 
 #=
 sol = solve(prob; T=tVal,
