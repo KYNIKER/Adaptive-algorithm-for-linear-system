@@ -249,6 +249,8 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     newRR = copy(newR)
     #lastV = Zonotope(zero(discritezationDict[m].center), [zero(discritezationDict[m].center)])
     Ub = overapproximate(linear_map(B, U), Zonotope)
+    maxVal = 0.
+    minVal = 0.
     while time < endtime
 
         attempts = 1
@@ -266,22 +268,21 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
                 #V = copy(inputDiscritezationDict[currentTimeStep])
                 ϕt = phiDict[currentTimeStep]
                 newRR = linear_map(Φ, discritezationDict[currentTimeStep])
-                #V = linear_map(Φ, V)
+                V = linear_map(Φ, V)
             else
                 newRR = linear_map(ϕt, newRR)
-                #V = linear_map(ϕt, V)
+                V = linear_map(ϕt, V)
             end
-            V = linear_map(ReachabilityAnalysis.Exponentiation.Φ₁(A, time, alg, false, nothing), Ub)
+            #V = linear_map(ReachabilityAnalysis.Exponentiation.Φ₁(A, time, alg, false, nothing), Ub)
             changedTimeStep = false
             #hom = map(x -> ρ(x, newRR), constraintProjVectors)
             #println(hom)
             inhom = map(x -> ρ(x, V), constraintProjVectors)
 
-            if all((input + ρ(x, newRR)) < y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))
+            if all((input + ρ(x, newRR)) < y for (input, x, y) in zip(inhom, constraintProjVectors, constraintProjBounds))
                 approveFlag = true
-                push!(reachSet, minkowski_sum(newRR, V)) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
+                push!(reachSet, minkowski_sum(copy(newRR), copy(V))) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
                 Sρ = copy(inhom)
-
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM)
             else
@@ -325,6 +326,9 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
             end
         end
     end
+    #println(minVal, " ", maxVal)
+    println(Sρ)
+    println(map(x -> ρ(x, reachSet[end]), constraintProjVectors))
     return reachSet, timeStepRecorder, attemptsRecorder
 end
 

@@ -66,6 +66,7 @@ STRATEGY = 1
 
 initialTimeStep = 0.8
 m = initialTimeStep / 2
+steps = 10
 
 palette = Plots.palette(:fes10)
 LazySets.Comparison.set_tolerance(Float64)
@@ -74,7 +75,7 @@ alp = 1.0
 
 A = [0. 1.;
     -2.5 0.]
-P₁ = Zonotope([0.5, 1.5], [0.0 0.2 0.05; 0.45 -0.17 0.0])
+P₁ = Zonotope([0.5, 1.5], [0.0 0.2 0.05; 0.45 -0.17 0.0]) #Zonotope([0., 1.5], [[0.0; 0.05]])
 
 dimToPlot = 2
 # No input
@@ -89,19 +90,29 @@ p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false, grid=
     tickfont=font(8, "Times"),
     xguidefont=font(12, "Times"),
     yguidefont=font(12, "Times"),
+    xtick=([-1, 0, 1, 2], ["-1", "0", "1", "2"]),
+    ytick=([-2, 0, 2, 4], ["-2", "0", "2", "4"]),
     bottom_margin=2mm,
-    left_margin=5mm,
-    right_margin=5mm,
-    top_margin=2mm,
-    xlabel=L"x", ylabel=L"y")
-
-plot!(p, naivediscritezationDict[initialTimeStep], c=palette[9], alpha=alp, annotations=(2.3, -2.2, L"\Omega_{[0, \delta_1]}"))
-plot!(p, discritezationDict[initialTimeStep], c=palette[6], alpha=alp, annotations=(-0.1, 0.3, L"\Omega_{[0, \delta_1]}"))
-plot!(p, phiDict[m] * discritezationDict[m], c=palette[5], alpha=alp, annotations=(0.9, -1.0, L"\phi_{\delta_0} \Omega_{[0, \delta_0]}"))
-plot!(p, discritezationDict[m], c=palette[5], alpha=alp, annotations=(1.1, 1.0, L"\Omega_{[0, \delta_0]}"))
+    left_margin=2mm,
+    right_margin=2mm,
+    top_margin=2mm)
+xlabel!(p, L"x")
+ylabel!(p, L"y")
+plot!(p, naivediscritezationDict[initialTimeStep], c=palette[9], alpha=alp, annotations=(2.3, -2.2, L"\Omega_{\left[0, \delta_1 \right]}"))
+plot!(p, discritezationDict[initialTimeStep], c=palette[6], alpha=alp, annotations=(-0.1, 0.3, L"\Omega_{\left[0, \delta_1 \right]}"))
+plot!(p, phiDict[m] * discritezationDict[m], c=palette[5], alpha=alp, annotations=(0.9, -1.0, L"\phi_{\delta_0} \Omega_{\left[0, \delta_0 \right]}"))
+plot!(p, discritezationDict[m], c=palette[5], alpha=alp, annotations=(1.1, 1.0, L"\Omega_{\left[0, \delta_0 \right]}"))
 plot!(p, P₁, c=:white, alpha=1., annotations=(0.5, 1.5, L"X_0"))
 
-savefig(p, "plots/" * "timeDiscretization.pdf")
+cX = copy(P₁)
+tP = exp(A * (1 / steps))
+for i in 0:steps-1
+    global cX = tP * cX
+    plot!(p, cX, c=:white, fa=0.0, la=0.3, ls=:dash, lc=:white)
+end
+
+
+savefig(p, "plots/" * "TD.pdf")
 
 discritezationDict, _, phiDict = ReACTDiscretizeLazy(A, B, P₁, U, m, initialTimeStep, ReachabilityAnalysis.Exponentiation.BaseExp)
 naivediscritezationDict, _, _ = ReACTDiscretizeLazy(A, B, P₁, U, initialTimeStep, initialTimeStep, ReachabilityAnalysis.Exponentiation.BaseExp)
@@ -111,11 +122,14 @@ p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false, grid=
     tickfont=font(8, "Times"),
     xguidefont=font(12, "Times"),
     yguidefont=font(12, "Times"),
+    xtick=([-1, 0, 1, 2], ["-1", "0", "1", "2"]),
+    ytick=([-2, 0, 2, 4], ["-2", "0", "2", "4"]),
     bottom_margin=2mm,
-    left_margin=5mm,
-    right_margin=5mm,
-    top_margin=2mm,
-    xlabel=L"x", ylabel=L"y")
+    left_margin=2mm,
+    right_margin=2mm,
+    top_margin=2mm)
+xlabel!(p, L"x")
+ylabel!(p, L"y")
 
 plot!(p, naivediscritezationDict[initialTimeStep], c=palette[9], alpha=alp, annotations=(2., -2.1, L"\Omega_{[0, \delta_1]}"))
 plot!(p, discritezationDict[initialTimeStep], c=palette[6], alpha=alp, annotations=(0.1, 0.6, L"\Omega_{[0, \delta_1]}"))
@@ -123,5 +137,11 @@ plot!(p, phiDict[m] * discritezationDict[m], c=palette[5], alpha=alp, annotation
 plot!(p, discritezationDict[m], c=palette[5], alpha=alp, annotations=(1.1, 1.0, L"\Omega_{[0, \delta_0]}"))
 plot!(p, P₁, c=:white, alpha=1., annotations=(0.5, 1.5, L"X_0"))
 
-savefig(p, "plots/" * "timeDiscretizationLazy.pdf")
+cX = copy(P₁)
+for i in 0:steps-1
+    global cX = tP * cX
+    plot!(p, cX, c=:white, fa=0.0, la=0.3, ls=:dash, lc=:white)
+end
+
+savefig(p, "plots/" * "TDL.pdf")
 

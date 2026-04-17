@@ -170,3 +170,26 @@ function plotProjectedFlowpipe(boxes2, timesteps, dim1, dim2; approx=true)
 
     return corners2, maxval, minval
 end
+
+function plotSupportFlowpipe(boxes2, timesteps, direction1, direction2)
+    corners2 = Vector(undef, size(boxes2, 1))
+    maxval = -∞
+    minval = ∞
+    time = 0.0
+    #direction = direction / norm(direction)
+    println(norm(direction1))
+    for i in 1:(size(boxes2, 1))
+        t = timesteps[i]
+        r = boxes2[i]
+
+        maxcor2 = ρ(direction1, r)
+        mincor2 = ρ(direction2, r)
+        corners2[i] = Shape([time, time + t, time + t, time], [mincor2, mincor2, maxcor2, maxcor2])
+        time += t
+        maxval = max(maxval, maxcor2)
+        minval = min(minval, mincor2)
+    end
+
+
+    return corners2, maxval, minval
+end
