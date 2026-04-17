@@ -1,6 +1,5 @@
 using ReachabilityAnalysis, Plots, LazySets, BenchmarkTools, CSV, DataFrames, MathematicalPredicates
 
-#include("models.jl")
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
 include("models/motor/motor_load.jl")
@@ -8,9 +7,7 @@ include("models/building/building_load.jl")
 include("models/PDE/pde_load.jl")
 include("models/ISS/iss_load.jl")
 include("models/beam/beam_load.jl")
-include("models/FOM/fom_load.jl")
 include("models/MNA1/mna1_load.jl")
-include("models/MNA5/mna5_load.jl")
 
 _, _, _, _, _, ISSproperty, _ = load_iss()
 _, _, _, _, _, pdeProperty, _ = load_pde()
@@ -22,7 +19,6 @@ algCheckDict = Dict(
     "iss" => LGG09(δ=6e-4, template=CustomDirections([ISSproperty[1].a]), approx_model=Forward()),
     "motor" => LGG09(δ=1e-3, template=CustomDirections([sparsevec([1], [1.0], 8), sparsevec([5], [1.0], 8)]), approx_model=Forward()),
     "mna1" => LGG09(δ=4e-4, template=CustomDirections([sparsevec([1], [1.0], 578)]), approx_model=Forward()),
-    "mna5" => LGG09(δ=3e-1, template=CustomDirections([sparsevec([1], [1.0], 10913), sparsevec([2], [1.0], 10913)]), approx_model=Forward()),
     "pde" => LGG09(δ=3e-4, template=CustomDirections([pdeProperty[1].a]), approx_model=Forward())
 )
 
@@ -62,7 +58,7 @@ function doLGG09JuliaTest(load_func, name)
         println("No arguments found for ", name)
         return
     end
-    if _name == "mna1" || _name == "mna5"
+    if _name == "mna1"
         sys = @system(x' = Ax + B, x ∈ Universe(n))
     else
         sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
@@ -72,7 +68,6 @@ function doLGG09JuliaTest(load_func, name)
     isSparse = constraint[1].a isa SparseVector
 
     b = @benchmarkable _ = RunCodeLGG09($prob, $algCheck, $t, $constraint, $isSparse)
-    #tune!(b) # Tune to find the optimal samples/evals
     y = run(b)
 
     # Check if it works

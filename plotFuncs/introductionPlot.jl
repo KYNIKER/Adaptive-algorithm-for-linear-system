@@ -1,19 +1,14 @@
-# Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, Plots.PlotMeasures, LaTeXStrings
 
 
 include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
-include("../models/motor/motor_load.jl")
 include("../models/building/building_load.jl")
 include("../models/PDE/pde_load.jl")
 include("../models/ISS/iss_load.jl")
 include("../models/beam/beam_load.jl")
-include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
-include("../models/MNA5/mna5_load.jl")
-#include("CegarFunctions.jl")
 include("../ReACT.jl")
 include("plotHelper.jl")
 
@@ -38,17 +33,12 @@ dimToPlot = 2
 # No input
 B = diagm([0.0, 0.0])
 U = Zonotope(zeros(dim(P₁)), [zeros(dim(P₁))])
-#U::Zonotope = BallInf([0.0], 0.0)
 
 
 constraint = isa(constraint, Array) ? constraint : [constraint]
 
 boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep / 2^3, STRATEGY)
-#println(boxes1)
 shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, 2)
-# shapes1, maxVal1, minVal1 = getShapes(boxes1, timesteps1)
-
-#println("Finished simulations")
 
 # Get new values
 U = Zonotope(zeros(dim(P₁)), [zeros(dim(P₁))])
@@ -58,28 +48,12 @@ println("Starting second simulation with timestep size: ", initialTimeStep)
 
 boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, STRATEGY)
 shapes2, maxVal2, minVal2 = plotProjectedFlowpipe(boxes2, timesteps2, 0, 2)
-#shapes2, maxVal2, minVal2 = getShapes(boxes2, timesteps2)
 
-initialTimeStep = 0.4
-
-println("Starting third simulation with timestep size: ", initialTimeStep)
-
-boxes3, timesteps3, attemptsRecorder3 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, STRATEGY)
-shapes3, maxVal3, minVal3 = getShapes(boxes3, timesteps3)
-
-
-initialTimeStep = 0.8
-#=
-println("Starting fourth simulation with timestep size: ", initialTimeStep)
-
-boxes4, timesteps4, attemptsRecorder4 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, -1, STRATEGY)
-shapes4, maxVal4, minVal4 = getShapes(boxes4, timesteps4; bounds=[-constraint[1].b, 5.0])
-=#
 println("Finished simulations")
 
 constraintValAdjusted = -constraint[1].b * 1.2
-maxVal = max(maxVal1, maxVal2, maxVal3, constraintValAdjusted)
-minVal = min(minVal1, minVal2, minVal3, constraintValAdjusted)
+maxVal = max(maxVal1, maxVal2, constraintValAdjusted)
+minVal = min(minVal1, minVal2, constraintValAdjusted)
 
 
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
@@ -97,17 +71,7 @@ p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
     top_margin=2mm,
     ylims=(minVal, maxVal), xlims=(0, maximum(T)), xlabel=L"Time", ylabel=L"x")
 
-#=
-for i in eachindex(shapes4)
-    if i == 1
-        plot!(p, shapes4[i], vars=(1, 0), c=palette[1], alpha=alp,
-            label="Pseudo")
-    else
-        plot!(p, shapes4[i], vars=(1, 0), c=palette[1], alpha=alp,
-            label="")
-    end
-end
-=#
+
 for i in eachindex(shapes1)
     if i == 1
         plot!(p, shapes1[i], vars=(1, 0), c=palette[9], alpha=1.0, lw=0.05,
@@ -117,17 +81,7 @@ for i in eachindex(shapes1)
             label="")
     end
 end
-#=
-for i in eachindex(shapes3)
-    if i == 1
-        plot!(p, shapes3[i], vars=(1, 0), c=palette[3], alpha=alp,
-            label=L"\delta =0.4")
-    else
-        plot!(p, shapes3[i], vars=(1, 0), c=palette[3], alpha=alp,
-            label="")
-    end
-end
-=#
+
 for i in eachindex(shapes2)
     if i == 1
         plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=alp, lw=0.0, fa=0.0,
@@ -138,8 +92,6 @@ for i in eachindex(shapes2)
     end
 end
 
-
-
 # Plot real coswave
 #ω = sqrt(2.5)
 #t = 0:0.01:10
@@ -148,7 +100,6 @@ end
 #plot!(p, t, x1, label="Cos(t)", c=:red)
 
 # Plot constraint
-
 plot!(LazySets.HalfSpace(-constraint[1].a, -constraint[1].b), lab=(L"\mathcal{X}_\bot"), alpha=1.0, fillstyle=:/)
 
 

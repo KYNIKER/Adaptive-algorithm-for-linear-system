@@ -6,18 +6,16 @@ include("models/building/building_load.jl")
 include("models/PDE/pde_load.jl")
 include("models/ISS/iss_load.jl")
 include("models/beam/beam_load.jl")
-include("models/FOM/fom_load.jl")
 include("models/MNA1/mna1_load.jl")
-include("models/MNA5/mna5_load.jl")
 include("ReACT.jl")
 include("ReACTv2.jl")
+include("helperfunctions.jl")
 
 
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
 function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     LazySets.load_expokit()
     println("Running benchmark for: ", name)
-    #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
     BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
 
     # Actual run
@@ -26,8 +24,6 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
 
     b = @benchmarkable _ = ReACT($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $δ⁻, $STRATEGY)
 
-    #tune!(b; verbose=true) # Tune to find the optimal samples/evals
-    #println("tuned!")
     y = run(b; verbose=true)
     println("Run completed.")
 
@@ -69,8 +65,6 @@ function runBenchmarkv2(name, initialTimeStep, δ⁻, load_func, STRATEGY)
 
     b = @benchmarkable _ = ReACTWithSupport($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $δ⁻, $STRATEGY)
 
-    #tune!(b; verbose=true) # Tune to find the optimal samples/evals
-    #println("tuned!")
     y = run(b; verbose=true)
     println("Run completed.")
 
@@ -143,8 +137,3 @@ GC.gc()
 
 runBenchmarkv2("mna1", (2.0)^12 * 4e-4, 4e-4, load_mna1, 1)
 GC.gc()
-
-#runBenchmark("mna5", 0.2, 1, load_mna5, 1)
-#GC.gc()
-#runBenchmark(modelname, 0.0025, dig, model, 0)
-#GC.gc()

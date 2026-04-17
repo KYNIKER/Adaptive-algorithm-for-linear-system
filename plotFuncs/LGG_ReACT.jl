@@ -1,27 +1,20 @@
-# Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
 
 
 include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
-include("../models/motor/motor_load.jl")
 include("../models/building/building_load.jl")
 include("../models/PDE/pde_load.jl")
 include("../models/ISS/iss_load.jl")
 include("../models/beam/beam_load.jl")
-include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
-include("../models/MNA5/mna5_load.jl")
-#include("CegarFunctions.jl")
-#include("../CegarInhomogenous.jl")
 include("plotHelper.jl")
 include("../ReACT.jl")
 
 name = "LGGvsReACTBuilding"
 load_func = load_building
 A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
-#T = [0.0, 5.0]
 palette = Plots.palette(:fes10)
 c1 = palette[9]
 c2 = palette[6]
@@ -34,7 +27,6 @@ initialTimeStep = (2.0)^9 * 2e-3
 STRATEGY = 1
 
 boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
-#pop!(shapes1)
 println(size(boxes1))
 return 0
 shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
@@ -44,33 +36,22 @@ tVal = maximum(T)
 n = size(A, 1)
 
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
-#alg = LGG09(δ=2e-3, template=CustomDirections([sparsevec([25], [1.0], 48)]), approx_model=Forward())
 prob = InitialValueProblem(sys, P₁)
 
 sol = solve(prob; T=tVal,
-    alg=LGG09(; δ=0.004, vars=(25), n=48)) #solve(prob, alg; T=20.0) # Running the actual time
+    alg=LGG09(; δ=0.004, vars=(25), n=48))
 
-#=
-sol = solve(prob; T=tVal,
-    alg=BFFPSV18(δ=2e-3, vars=[25], partition=[i:i for i in 1:48]))
-=#
-#sol.options[:plot_vars] = [0, 25]
 solution_proj = LazySets.project(sol, [dimToPlot])
-#res = mapreduce(c -> ρ(c.a, sol) <= c.b, &, constraint) # Check if hits constraint
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
     legendfont=font(12, "Times"),
-    #legendcolumn=-1,
-    #legend_position=:outertop,
     tickfont=font(8, "Times"),
     xguidefont=font(12, "Times"),
     yguidefont=font(12, "Times"),
     xtick=([0, tVal], [L"0", L"T"]),
-    #ytick=([], []),
     bottom_margin=2mm,
     left_margin=5mm,
     right_margin=5mm,
     top_margin=2mm,
-    #ylims=(minVal1, maxVal1), 
     xlims=(0, tVal), xlabel=L"Time", ylabel=L"x_{%$dimToPlot}")
 
 

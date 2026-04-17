@@ -1,4 +1,3 @@
-# Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf
 include("helperfunctions.jl")
 include("models/heat/heat_load.jl")
@@ -8,14 +7,12 @@ include("models/building/building_load.jl")
 include("models/PDE/pde_load.jl")
 include("models/ISS/iss_load.jl")
 include("models/beam/beam_load.jl")
-include("models/FOM/fom_load.jl")
 include("models/MNA1/mna1_load.jl")
-include("models/MNA5/mna5_load.jl")
-#include("CegarFunctions.jl")
 include("ReACT.jl")
 
-const μ = 0.001
-STRATEGY = 2
+# Strategy 1 always tries increasing timestep
+# Strategy 2 attempts to double timestep if no failure in past 4
+STRATEGY = 2 
 
 δ⁻ = 0.001
 initialTimeStep = δ⁻ * 2^10
@@ -66,7 +63,7 @@ if plotOutput
 
     for i in eachindex(shapes2)
         attemptCount = attemptsRecorder[i]
-        if attemptCount == 1 # First attempt
+        if attemptCount == 1 # First attempt success
             plot!(p, shapes2[i], vars=(1, 0), c=:green, alpha=:0.2, lab="")
         elseif attemptCount == 2 # Second
             plot!(p, shapes2[i], vars=(1, 0), c=:yellow, alpha=:0.2, lab="")
@@ -88,7 +85,6 @@ if plotOutput
 
     println("Amount of attempts: ", sum(attemptsRecorder))
     println("Unique timesteps ", unique(timesteps))
-
     #println("List of attempts: ", attemptsRecorder)
 
     plot(p)

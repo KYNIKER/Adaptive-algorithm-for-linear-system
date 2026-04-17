@@ -1,6 +1,5 @@
 using ReachabilityAnalysis, Plots, LazySets, BenchmarkTools, CSV, DataFrames, MathematicalPredicates
 
-#include("models.jl")
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
 include("models/motor/motor_load.jl")
@@ -8,10 +7,7 @@ include("models/building/building_load.jl")
 include("models/PDE/pde_load.jl")
 include("models/ISS/iss_load.jl")
 include("models/beam/beam_load.jl")
-include("models/FOM/fom_load.jl")
 include("models/MNA1/mna1_load.jl")
-include("models/MNA5/mna5_load.jl")
-
 
 
 algCheckDict = Dict(
@@ -21,7 +17,6 @@ algCheckDict = Dict(
     "iss" => BFFPSV18(δ=6e-4, vars=136:270, partition=vcat([i:i for i in 1:135], [136:270])),
     "motor" => BFFPSV18(δ=1e-3, vars=[1, 5], partition=[i:i for i in 1:8]),
     "mna1" => BFFPSV18(δ=4e-4, vars=[1], partition=[i:i for i in 1:578]),
-    "mna5" => BFFPSV18(δ=3e-1, vars=[1, 2], partition=[i:i for i in 1:10913]),
     "pde" => BFFPSV18(δ=3e-4, vars=1:84, partition=[i:i for i in 1:84])
 )
 
@@ -68,7 +63,7 @@ function doBFFPSV18JuliaTest(load_func, name)
         println("No arguments found for ", name)
         return
     end
-    if _name == "mna1" || _name == "mna5"
+    if _name == "mna1"
         sys = @system(x' = Ax + B, x ∈ Universe(n))
     else
         sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
@@ -114,11 +109,12 @@ function doBFFPSV18JuliaTest(load_func, name)
     println("Finished running benchmark for: ", namePrint, "!")
 end
 
-names = ["beam", "building", "heat", "iss", "motor", "pde", "mna1", "mna5"]
-loadFuncs = [load_beam, load_building, load_heat_input, load_iss, load_motor, load_pde, load_mna1, load_mna5]
+println("Woosh")
+
+names = ["beam", "building", "heat", "iss", "motor", "pde", "mna1"]
+loadFuncs = [load_beam, load_building, load_heat_input, load_iss, load_motor, load_pde, load_mna1]
 
 for (name, load_func) in zip(names, loadFuncs)
     doBFFPSV18JuliaTest(load_func, name)
 end
 
-#doBFFPSV18JuliaTest(load_mna1, "mna1")

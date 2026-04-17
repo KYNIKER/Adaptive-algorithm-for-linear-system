@@ -1,6 +1,6 @@
 export ReACTDiscretizeBase
 using LinearAlgebra, LazySets, ReachabilityAnalysis
-include("helperfunctions.jl")
+
 isinvertible(x) = applicable(inv, x) && isone(inv(Matrix(x)) * x)
 
 function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=10, reduceOrder::Int=10) where {N}
@@ -8,7 +8,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
 
-    U = linear_map(B, U) #overapproximate(concretize(B * U), Zonotope)
+    U = linear_map(B, U)
 
     let ϕ::Matrix{Float64} = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
         tempM = similar(ϕ)
@@ -22,7 +22,6 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
 
         dU = overapproximate(d * U, Zonotope)
         E_ψ = convert(Zonotope, symmetric_interval_hull(linear_map(P2A_abs, symmetric_interval_hull(linear_map(A, U)))))
-        #P = minkowski_sum(dU, E_ψ)
         E⁺ = convert(Zonotope, symmetric_interval_hull(linear_map(P2A_abs, symmetric_interval_hull(linear_map(A * A, X0)))))
         lt = minkowski_sum(linear_map(ϕ, X0), dU)
         rt = minkowski_sum(E_ψ, E⁺)
@@ -30,7 +29,6 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         disc = overapproximate(CH(X0, f), Zonotope)
         Φ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, Φcache)
         P = linear_map(Φ₁, U)
-        #println(disc)
         while d < δ⁺
             discritezationDict[d] = copy(disc)
             inputDiscritezationDict[d] = copy(P)
@@ -40,7 +38,6 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
                 end
             end
             phiDict[d] = copy(ϕ)
-            #tΦ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, Φcache)
             disc = overapproximate(CH(disc, minkowski_sum(P, linear_map(ϕ, disc))), Zonotope)
             P = P + linear_map(ϕ, P)
             mul!(tempM, ϕ, ϕ)
@@ -71,7 +68,6 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, 
     let ϕ::Matrix{Float64} = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
         tempM = similar(ϕ)
         d = δ⁻
-        dia::Matrix{Float64} = diagm(ones(XDim))
         isInvA = isinvertible(A)
         Φ = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
         A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
