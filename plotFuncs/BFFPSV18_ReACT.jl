@@ -16,7 +16,7 @@ include("../models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
 #include("../CegarInhomogenous.jl")
 include("plotHelper.jl")
-include("../ReACT.jl")
+include("../ReACTv2.jl")
 
 name = "BFFPSV18vsReACTBuilding"
 load_func = load_heat_input
@@ -29,19 +29,18 @@ LazySets.Comparison.set_tolerance(Float64)
 LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
-Digits = 1e-4
-initialTimeStep = (2.0)^14 * 1e-4
+Digits = 1e-3
+initialTimeStep = (2.0)^10 * 1e-3
 STRATEGY = 1
 
-boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
-#pop!(shapes1)
-println(size(boxes1))
-return 0
-shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
-# LGG
-δ = 0.00
 tVal = maximum(T)
 n = size(A, 1)
+
+boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [sparsevec([dimToPlot], [1.0], n), sparsevec([dimToPlot], [-1.0], n)], STRATEGY)
+
+shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
+# LGG
+δ = 0.00
 
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
 prob = InitialValueProblem(sys, P₁)

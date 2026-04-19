@@ -22,21 +22,21 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
 
         dU = overapproximate(d * U, Zonotope)
         E_ψ = convert(Zonotope, symmetric_interval_hull(linear_map(P2A_abs, symmetric_interval_hull(linear_map(A, U)))))
-        #P = minkowski_sum(dU, E_ψ)
+        P = minkowski_sum(dU, E_ψ)
         E⁺ = convert(Zonotope, symmetric_interval_hull(linear_map(P2A_abs, symmetric_interval_hull(linear_map(A * A, X0)))))
         lt = minkowski_sum(linear_map(ϕ, X0), dU)
         rt = minkowski_sum(E_ψ, E⁺)
         f = minkowski_sum(lt, rt)
         disc = overapproximate(CH(X0, f), Zonotope)
         Φ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, nothing)
-        P = linear_map(Φ₁, U)
+        #P = linear_map(Φ₁, U)
         #println(disc)
         while d < δ⁺
             discritezationDict[d] = copy(disc)
             inputDiscritezationDict[d] = copy(P)
             if maxOrder > 0
                 if LazySets.order(P) > maxOrder
-                    #P = reduce_order(P, reduceOrder)
+                    P = reduce_order(P, reduceOrder)
                 end
                 if LazySets.order(disc) > maxOrder
                     disc = reduce_order(disc, reduceOrder)
@@ -45,7 +45,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
             phiDict[d] = copy(ϕ)
             #tΦ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, Φcache)
             disc = overapproximate(CH(disc, minkowski_sum(P, linear_map(ϕ, disc))), Zonotope)
-            P = P + linear_map(ϕ, P)
+            P = minkowski_sum(P, linear_map(ϕ, P))
             mul!(tempM, ϕ, ϕ)
             copy!(ϕ, tempM)
             d = d * 2

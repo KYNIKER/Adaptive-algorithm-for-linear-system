@@ -16,7 +16,7 @@ include("../models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
 #include("../CegarInhomogenous.jl")
 include("plotHelper.jl")
-include("../ReACT.jl")
+include("../ReACTv2.jl")
 
 name = "LGGvsReACTBuilding"
 load_func = load_building
@@ -29,26 +29,23 @@ LazySets.Comparison.set_tolerance(Float64)
 LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
-Digits = 1e-3
-initialTimeStep = (2.0)^10 * 1e-3
+Digits = 2e-3
+initialTimeStep = (2.0)^9 * 2e-3
 STRATEGY = 1
 
-boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
-#pop!(shapes1)
-println(size(boxes1))
-return 0
-shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
-# LGG
-δ = 0.00
+boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
+
+shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 tVal = maximum(T)
 n = size(A, 1)
 
+println(maxVal1, minVal1)
+
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
-#alg = LGG09(δ=2e-3, template=CustomDirections([sparsevec([25], [1.0], 48)]), approx_model=Forward())
+alg = LGG09(δ=2e-3, template=CustomDirections([sparsevec([25], [1.0], 48)]), approx_model=Forward())
 prob = InitialValueProblem(sys, P₁)
 
-sol = solve(prob; T=tVal,
-    alg=LGG09(; δ=0.002, vars=(25), n=48)) #solve(prob, alg; T=20.0) # Running the actual time
+sol = solve(prob; T=tVal, alg=LGG09(; δ=0.002, vars=(25), n=48)) #solve(prob, alg; T=20.0) # Running the actual time
 
 #=
 sol = solve(prob; T=tVal,
