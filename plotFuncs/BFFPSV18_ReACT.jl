@@ -1,4 +1,4 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
 
 include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")

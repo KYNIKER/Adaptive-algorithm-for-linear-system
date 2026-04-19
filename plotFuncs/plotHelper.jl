@@ -1,4 +1,4 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile
 
 include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")
