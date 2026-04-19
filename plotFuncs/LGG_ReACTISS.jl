@@ -48,7 +48,7 @@ prob = InitialValueProblem(sys, P₁)
 
 sol = solve(prob; T=tVal,
     #alg=LGG09(; δ=2e-3, template=CustomDirections([constraint[1].a]), approx_model=Forward())) #solve(prob, alg; T=20.0) # Running the actual time
-    alg=LGG09(δ=6e-4, template=CustomDirections([constraint[1].a]), approx_model=Forward()))
+    alg=LGG09(δ=6e-4, template=CustomDirections([constraint[1].a, constraint[2].a]), approx_model=Forward()))
 println("Ran models")
 #=
 sol = solve(prob; T=tVal,
@@ -81,7 +81,7 @@ minVal = -constraintValAdjusted #min(minVal1, -constraintValAdjusted)
 
 #p = plot(dpi=300, thickness_scaling=1, xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
 
-#ylims!((minVal, maxVal))
+ylims!((minVal, maxVal))
 yticks!([-constraint[1].b, 0, constraint[1].b], [string(-constraint[1].b), "0.0", string(constraint[1].b)])
 #=
 for i in eachindex(shapes1)
@@ -91,27 +91,27 @@ end
 #plot!(p, flowpipe(solution_proj)[1], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0, lab=L"LGG")
 #LGGprojection = [Shape([Digits * (i - 1), Digits * (i), Digits * (i), Digits * (i - 1)], [elem[1], elem[1], elem[2], elem[2]]) for (i, elem) in pairs([map(x -> [ρ(constraint[1].a, x), ρ(constraint[2].a, x)], flowpipe(sol))])]
 #plot!(p, sol, vars=(0, 1), color=c2, c=c2, la=0.0, alpha=0.7, lw=0.0)
-println(flowpipe(sol)[end])
+#println(flowpipe(sol)[end])
+
+for (i, rp) in pairs(flowpipe(sol))
+    el1 = ρ(constraint[1].a, rp)
+    el2 = -ρ(constraint[2].a, rp)
+
+    plot!(p, Shape([Digits * (i - 1), Digits * (i), Digits * (i), Digits * (i - 1)], [el1, el1, el2, el2]), color=c2, c=c2, la=0.0, alpha=0.7, lw=0.05,
+        label=i == 1 ? L"LGG" : "")
+end
+println("plotted lgg")
 time = 0.0
 for (i, rp) in pairs(boxes1)
     t = timesteps1[i]
     el1 = ρ(constraint[1].a, rp)
     el2 = -ρ(constraint[2].a, rp)
-    plot!(p, Shape([time, time + t, time + t, time], [el1, el1, el2, el2]), color=c1, c=c1, la=0.0, alpha=1.0, lw=0.05, label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
+    plot!(p, Shape([time, time + t, time + t, time], [el1, el1, el2, el2]), color=c1, c=c1, la=0.0, alpha=0.7, lw=0.05, label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
     global time += t
 end
 println("plotted ours")
-#=
-for (i, rp) in pairs(flowpipe(sol))
-    el1 = ρ(constraint[1].a, rp)
-    el2 = -ρ(constraint[2].a, rp)
-
-    plot!(p, Shape([Digits * (i - 1), Digits * (i), Digits * (i), Digits * (i - 1)], [el1, el1, el2, el2]), color=c2, c=c2, la=0.0, alpha=0.7, lw=0.01,
-        label=i == 1 ? L"LGG" : "")
-end
-=#
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
-plot!(LazySets.HalfSpace([0.0, 1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
+plot!(LazySets.HalfSpace([0.0, 1.0], -constraint[1].b), c=:black, fillstyle=:/)
 xlims!((0, tVal))
 println(minVal, " ", maxVal)
 savefig(p, "plots/" * name * "Plot.pdf")
