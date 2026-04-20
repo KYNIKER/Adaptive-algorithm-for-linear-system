@@ -44,8 +44,8 @@ initialTimeStep = 0.1
 
 println("Starting second simulation with timestep size: ", initialTimeStep)
 
-boxes2, timesteps2= PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, [constraint[1].a, -constraint[1].a], STRATEGY)
-shapes2, maxVal2, minVal2 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
+boxes2, timesteps2= PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, [-constraint[1].a, constraint[1].a], STRATEGY)
+shapes2, maxVal2, minVal2 = plotSupportFlowpipe(boxes2, timesteps2, 1, 2)
 
 println("Finished simulations")
 
