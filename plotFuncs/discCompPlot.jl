@@ -21,9 +21,8 @@ load_func = load_heat_input
 A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
 name = "NaivevsOptimizedDiscretize"
 
-p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=true, #ϵ=dm / 4,
+p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=true,
     legendfont=font(12, "Times"),
-    #legendcolumn=-1,
     legend_position=:bottomright,
     tickfont=font(8, "Times"),
     xguidefont=font(12, "Times"),

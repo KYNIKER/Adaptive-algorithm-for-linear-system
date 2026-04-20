@@ -24,7 +24,6 @@ algCheckDict = Dict(
 
 function RunCodeLGG09(prob, alg, t, constraint, isSparse=true)
     sol = solve(prob, alg; T=t) # Running the actual time
-    #println(sol.F)
     return mapreduce(c -> ρ(c.a, sol) <= c.b, &, constraint) # Check if hits constraint
     if isSparse # Usually true
         println("sparse")
@@ -80,7 +79,7 @@ function doLGG09JuliaTest(load_func, name)
 
     df = DataFrame(name=name, avgTime=mean(timeList), medianTime=median(timeList), success=res)
     filename = "results/LGG09_" * name * "Results" * ".csv"
-    if isfile(filename)# Check if file exists
+    if isfile(filename) # Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim=";", append=true)
         end

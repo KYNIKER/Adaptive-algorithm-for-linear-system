@@ -14,7 +14,6 @@ strategy = 2
 function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     LazySets.load_expokit()
     println("Running benchmark for: ", name)
-    #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
     BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
 
     # Actual run

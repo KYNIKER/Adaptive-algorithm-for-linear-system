@@ -73,7 +73,7 @@ plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, 
 
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
 xlims!((0, tVal))
-#lens!(p, [5., 7.5], [0.09, 0.105], inset=(1, bbox(0.03, 0.7, 0.29, 0.25)), lc=:black, xtick=[], ytick=[], tickfont=font(20, "Times"), subplot=2)
+
 
 savefig(p, "plots/" * name * "Plot.pdf")
 savefig(p, "plots/" * name * "Plot.png")

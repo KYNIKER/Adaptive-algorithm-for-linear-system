@@ -54,7 +54,6 @@ minVal = min(minVal1, minVal2, constraintValAdjusted)
 
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=true,
     legendfont=font(12, "Times"),
-    #legendcolumn=-1,
     legend_position=:topright,
     tickfont=font(8, "Times"),
     xguidefont=font(12, "Times"),
@@ -80,10 +79,10 @@ for i in eachindex(shapes1)
 end
 for i in eachindex(shapes2)
     if i == 1
-        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=1.0, la=0.0, lw=0.05, #fa=0.0,
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=1.0, la=0.0, lw=0.05,
             label="Fixed step")
     else
-        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=1.0, la=0.0, lw=0.05, #fa=0.0,
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=1.0, la=0.0, lw=0.05,
             label="")
     end
 end

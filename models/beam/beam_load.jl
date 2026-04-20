@@ -1,4 +1,4 @@
-using  ReachabilityAnalysis
+using ReachabilityAnalysis
 
 include("./beam_model.jl")
 include("./beam_specifications.jl")
@@ -10,7 +10,6 @@ function load_beam()
     dimToPlot = 89
     X0 = convert(Zonotope, X0)
     X0 = Zonotope(Vector(X0.center), Matrix(X0.generators))
-    InputZonotope :: Zonotope = U#B*U
-    #println(InputZonotope)
+    InputZonotope::Zonotope = U
     return A, B, InputZonotope, X0, T, [constraint], dimToPlot
 end
