@@ -74,20 +74,20 @@ p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
 
 for i in eachindex(shapes1)
     if i == 1
-        plot!(p, shapes1[i], vars=(1, 0), c=palette[9], alpha=1.0, lw=0.05,
-            label=L"Adaptive")
+        plot!(p, shapes1[i], vars=(1, 0), c=palette[9], alpha=1.0, lw=0.15,
+            label="Our approach")
     else
-        plot!(p, shapes1[i], vars=(1, 0), c=palette[9], alpha=1.0, lw=0.05,
+        plot!(p, shapes1[i], vars=(1, 0), c=palette[9], alpha=1.0, lw=0.15,
             label="")
     end
 end
 
 for i in eachindex(shapes2)
     if i == 1
-        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=alp, lw=0.0, fa=0.0,
-            label=L"Fixed")
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=alp, la=0.0, #fa=0.0,
+            label="Fixed step")
     else
-        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=alp, lw=0.0, fa=0.0,
+        plot!(p, shapes2[i], vars=(1, 0), c=palette[6], alpha=alp, la=0.0, #fa=0.0,
             label="")
     end
 end
@@ -100,7 +100,8 @@ end
 #plot!(p, t, x1, label="Cos(t)", c=:red)
 
 # Plot constraint
-plot!(LazySets.HalfSpace(-constraint[1].a, -constraint[1].b), lab=(L"\mathcal{X}_\bot"), alpha=1.0, fillstyle=:/)
+
+plot!(LazySets.HalfSpace(-constraint[1].a, -constraint[1].b), lab="Unsafe region", c=:black, alpha=1.0, fillstyle=:/)
 
 
 savefig(p, "plots/" * "Introduction.pdf")

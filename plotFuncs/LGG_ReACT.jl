@@ -1,5 +1,6 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
-
+# Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
+gr()
 
 include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")
@@ -10,7 +11,7 @@ include("../models/ISS/iss_load.jl")
 include("../models/beam/beam_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("plotHelper.jl")
-include("../ReACT.jl")
+include("../ReACTv2.jl")
 
 name = "LGGvsReACTBuilding"
 load_func = load_building
@@ -26,22 +27,27 @@ Digits = 2e-3
 initialTimeStep = (2.0)^9 * 2e-3
 STRATEGY = 1
 
-boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
-println(size(boxes1))
-return 0
-shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
-# LGG
-δ = 0.00
+boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
+
+shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 tVal = maximum(T)
 n = size(A, 1)
 
+println(maxVal1, minVal1)
+
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
+alg = LGG09(δ=2e-3, template=CustomDirections([sparsevec([25], [1.0], 48)]), approx_model=Forward())
 prob = InitialValueProblem(sys, P₁)
 
-sol = solve(prob; T=tVal,
-    alg=LGG09(; δ=0.004, vars=(25), n=48))
-
+sol = solve(prob; T=tVal, alg=LGG09(; δ=0.002, vars=(25), n=48)) #solve(prob, alg; T=20.0) # Running the actual time
 solution_proj = LazySets.project(sol, [dimToPlot])
+
+#=
+sol = solve(prob; T=tVal,
+    alg=BFFPSV18(δ=2e-3, vars=[25], partition=[i:i for i in 1:48]))
+=#
+#sol.options[:plot_vars] = [0, 25]
+#res = mapreduce(c -> ρ(c.a, sol) <= c.b, &, constraint) # Check if hits constraint
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
     legendfont=font(12, "Times"),
     tickfont=font(8, "Times"),
@@ -66,15 +72,17 @@ ylims!((minVal, maxVal))
 yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0", string(constraint[1].b)])
 
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=1.0, lw=0.01,
+    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=0.7, lw=0.05,
         label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
-plot!(p, flowpipe(solution_proj)[1], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0, lab=L"LGG")
+
+plot!(p, flowpipe(solution_proj)[1], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.05, lab=L"LGG")
 plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0)
 
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
 xlims!((0, tVal))
+lens!(p, [0.0, 1.0], [0.005, 0.0065], inset=(1, bbox(0.1, 0.7, 0.23, 0.23)), lc=:black, xtick=[], ytick=[], tickfont=font(20, "Times"), subplot=2)
 
 savefig(p, "plots/" * name * "Plot.pdf")
 plot(p)

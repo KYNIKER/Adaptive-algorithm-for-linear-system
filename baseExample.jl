@@ -12,7 +12,7 @@ include("ReACT.jl")
 
 # Strategy 1 always tries increasing timestep
 # Strategy 2 attempts to double timestep if no failure in past 4
-STRATEGY = 2 
+STRATEGY = 2
 
 δ⁻ = 0.001
 initialTimeStep = δ⁻ * 2^10

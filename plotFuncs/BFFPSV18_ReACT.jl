@@ -9,7 +9,7 @@ include("../models/ISS/iss_load.jl")
 include("../models/beam/beam_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("plotHelper.jl")
-include("../ReACT.jl")
+include("../ReACTv2.jl")
 
 name = "BFFPSV18vsReACTBuilding"
 load_func = load_heat_input
@@ -22,16 +22,18 @@ LazySets.Comparison.set_tolerance(Float64)
 LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
-Digits = 1e-4
-initialTimeStep = (2.0)^14 * 1e-4
+Digits = 1e-3
+initialTimeStep = (2.0)^10 * 1e-3
 STRATEGY = 1
 
-boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, STRATEGY)
-shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
-# BFFPSV18
-δ = 0.00
 tVal = maximum(T)
 n = size(A, 1)
+
+boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
+
+shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
+# LGG
+δ = 0.00
 
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
 prob = InitialValueProblem(sys, P₁)
@@ -62,12 +64,12 @@ ylims!((minVal, maxVal))
 yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0", string(constraint[1].b)])
 
 
-plot!(p, flowpipe(solution_proj)[end], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0, lab=L"BFFPSV")
-plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0)
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=1.0, lw=0.01,
+    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=0.7, lw=0.01,
         label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
+plot!(p, flowpipe(solution_proj)[end], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0, lab=L"BFFPSV")
+plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0)
 
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
 xlims!((0, tVal))

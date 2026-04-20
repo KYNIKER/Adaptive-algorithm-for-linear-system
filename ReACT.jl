@@ -8,7 +8,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    
+
     constraintProjVectors = map(x -> x.a, constraint)
     constraintProjBounds = ρ.(constraintProjVectors, constraint)
 
@@ -109,7 +109,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    
+
     discritezationDict, _, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
 
     constraintProjVectors = map(x -> x.a, constraint)
@@ -130,7 +130,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     tempM = similar(Φ)
     ϕt = similar(Φ)
     newRR = copy(newR)
-    
+
     while time < endtime
 
         attempts = 1
@@ -200,7 +200,7 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    
+
     constraintProjVectors = map(x -> x.a, constraint)
     constraintProjBounds = map(x -> x.b, constraint)
 
@@ -226,6 +226,8 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     ϕt = similar(Φ)
     newRR = copy(newR)
     Ub = overapproximate(linear_map(B, U), Zonotope)
+    maxVal = 0.
+    minVal = 0.
     while time < endtime
 
         attempts = 1
@@ -240,18 +242,19 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
                 newR = discritezationDict[currentTimeStep]
                 ϕt = phiDict[currentTimeStep]
                 newRR = linear_map(Φ, discritezationDict[currentTimeStep])
+                V = linear_map(Φ, V)
             else
                 newRR = linear_map(ϕt, newRR)
+                V = linear_map(ϕt, V)
             end
-            V = linear_map(ReachabilityAnalysis.Exponentiation.Φ₁(A, time, alg, false, nothing), Ub)
+            #V = linear_map(ReachabilityAnalysis.Exponentiation.Φ₁(A, time, alg, false, nothing), Ub)
             changedTimeStep = false
             inhom = map(x -> ρ(x, V), constraintProjVectors)
 
-            if all((input + ρ(x, newRR)) < y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))
+            if all((input + ρ(x, newRR)) < y for (input, x, y) in zip(inhom, constraintProjVectors, constraintProjBounds))
                 approveFlag = true
-                push!(reachSet, minkowski_sum(newRR, V))
+                push!(reachSet, minkowski_sum(copy(newRR), copy(V))) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
                 Sρ = copy(inhom)
-
                 mul!(tempM, Φ, ϕt)
                 copy!(Φ, tempM)
             else
@@ -291,6 +294,9 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
             end
         end
     end
+    #println(minVal, " ", maxVal)
+    println(Sρ)
+    println(map(x -> ρ(x, reachSet[end]), constraintProjVectors))
     return reachSet, timeStepRecorder, attemptsRecorder
 end
 
@@ -303,7 +309,7 @@ function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    
+
     constraintProjVectors = map(x -> x.a, constraint)
     constraintProjBounds = map(x -> x.b, constraint)
 
@@ -311,7 +317,7 @@ function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
 
-    tempU = linear_map(B, U) 
+    tempU = linear_map(B, U)
     d = m
     while d <= initialTimeStep
         let ϕ::Matrix{Float64} = ReachabilityAnalysis.Exponentiation._exp(A, d, alg)
