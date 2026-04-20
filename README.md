@@ -1,6 +1,9 @@
 # ReACT
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19668133.svg)](https://doi.org/10.5281/zenodo.19668133)
+
 ## Overview
 ReACT is a reachability algorithm for linear time invarient systems. 
+
 
 It introduces variable time steps and a new discretization technique found [Here.](ReACTDiscretize.jl)
 
@@ -19,6 +22,7 @@ This repository has been made by:
 * Daniel Hilo Hansen
 * Mikkel Bjørn
 * Grace Melchiors
+
 
 ## License
 MIT License
