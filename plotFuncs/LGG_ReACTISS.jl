@@ -1,5 +1,8 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures, Polyhedra, CDDLib
+# Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures, Polyhedra, CDDLib
 
+
+include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
 include("../models/building/building_load.jl")
@@ -17,8 +20,8 @@ A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
 palette = Plots.palette(:fes10)
 c1 = palette[9]
 c2 = palette[6]
-LazySets.Comparison.set_tolerance(Float64)
-LazySets.Comparison.set_ztol(Float64, 1e-10)
+#LazySets.Comparison.set_tolerance(Float64)
+#LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
 Digits = 6e-4 #2e-3 #

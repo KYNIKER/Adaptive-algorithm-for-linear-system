@@ -10,23 +10,26 @@ include("../models/MNA1/mna1_load.jl")
 include("plotHelper.jl")
 include("../ReACT.jl")
 
-name = "BFFPSV18vsReACTBuilding"
+LazySets.load_expokit()
+
+name = "BFFPSV18vsReACTHeat"
 load_func = load_heat_input
 A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
 
 palette = Plots.palette(:fes10)
 c1 = palette[9]
 c2 = palette[6]
-LazySets.Comparison.set_tolerance(Float64)
-LazySets.Comparison.set_ztol(Float64, 1e-10)
+#LazySets.Comparison.set_tolerance(Float64)
+#LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
 Digits = 1e-3
 initialTimeStep = (2.0)^10 * 1e-3
-STRATEGY = 1
+STRATEGY = 2
 
 tVal = maximum(T)
 n = size(A, 1)
+#tsteps = ReACTWithSupport(A, B, (2.0)^10 * 1e-3, T, P₁, ballβ, constraint, 1e-3, STRATEGY) # Check if we reach the end
 
 boxes1, timesteps1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
 
@@ -37,12 +40,12 @@ shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
 prob = InitialValueProblem(sys, P₁)
 
-sol = solve(prob; T=tVal,
-    alg=BFFPSV18(δ=1e-3, vars=[133], partition=[i:i for i in 1:200]))
+sol = solve(prob; T=tVal, alg=BFFPSV18(δ=1e-3, vars=[133], partition=[i:i for i in 1:200]))
 
 solution_proj = LazySets.project(sol, [dimToPlot])
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
     legendfont=font(12, "Times"),
+    legend_position=:bottomright,
     tickfont=font(8, "Times"),
     xguidefont=font(12, "Times"),
     yguidefont=font(12, "Times"),
@@ -67,11 +70,13 @@ for i in eachindex(shapes1)
     plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=0.7, lw=0.01,
         label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
+
 plot!(p, flowpipe(solution_proj)[end], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0, lab=L"BFFPSV")
 plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0)
 
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
 xlims!((0, tVal))
+lens!(p, [5., 7.5], [0.09, 0.105], inset=(1, bbox(0.03, 0.7, 0.29, 0.25)), lc=:black, xtick=[], ytick=[], tickfont=font(20, "Times"), subplot=2)
 
 savefig(p, "plots/" * name * "Plot.pdf")
-plot(p)
+display(p)

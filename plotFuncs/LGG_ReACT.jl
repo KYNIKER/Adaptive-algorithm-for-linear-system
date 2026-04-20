@@ -17,8 +17,8 @@ A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
 palette = Plots.palette(:fes10)
 c1 = palette[9]
 c2 = palette[6]
-LazySets.Comparison.set_tolerance(Float64)
-LazySets.Comparison.set_ztol(Float64, 1e-10)
+#LazySets.Comparison.set_tolerance(Float64)
+#LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
 Digits = 2e-3
@@ -80,7 +80,7 @@ plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, 
 
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
 xlims!((0, tVal))
-lens!(p, [0.0, 1.0], [0.005, 0.0065], inset=(1, bbox(0.1, 0.7, 0.23, 0.23)), lc=:black, xtick=[], ytick=[], tickfont=font(20, "Times"), subplot=2)
+lens!(p, [0.0, 0.6], [0.004, 0.0065], inset=(1, bbox(0.1, 0.7, 0.23, 0.23)), lc=:black, xtick=[], ytick=[], tickfont=font(20, "Times"), subplot=2)
 
 savefig(p, "plots/" * name * "Plot.pdf")
 plot(p)

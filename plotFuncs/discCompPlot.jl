@@ -13,16 +13,14 @@ include("plotHelper.jl")
 
 
 Digits = 1e-3
-initialTimeStep = (2.0)^10 * 1e-3
+initialTimeStep = (2.0)^1 * 1e-3
 #initialTimeStep = 0.25
 palette = Plots.palette(:fes10) #Plots.palette(:cyclic_mrybm_35_75_c68_n256_s25, 2)
 c1 = palette[9]
 c2 = palette[6]
-LazySets.Comparison.set_tolerance(Float64)
-LazySets.Comparison.set_ztol(Float64, 1e-10)
 load_func = load_heat_input
 A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
-name = "heatDiscComp"
+name = "HeatMikkel"
 
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=true, #ϵ=dm / 4,
     legendfont=font(12, "Times"),

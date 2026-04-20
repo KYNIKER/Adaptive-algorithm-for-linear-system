@@ -47,7 +47,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
         while !approveFlag
             if currentTimeStep < m
-                return false
+                return -1
             end
 
             if changedTimeStep
@@ -97,7 +97,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
         end
     end
 
-    return true
+    return i - 1
 end
 
 # No input version (U::Nothing)
@@ -140,7 +140,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
         approveFlag = false
         while !approveFlag
             if currentTimeStep < m
-                return false
+                return -1
             end
 
             if changedTimeStep
@@ -188,7 +188,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
         end
     end
 
-    return true
+    return i - 1
 end
 
 function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, dirs, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5; naive=false) where {N}

@@ -8,6 +8,7 @@ include("models/beam/beam_load.jl")
 include("models/MNA1/mna1_load.jl")
 include("ReACT.jl")
 
+strat = 2
 
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
 function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
@@ -32,10 +33,10 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     end
 
 
-    isSuccess = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY) # Check if we reach the end
-
+    tsteps = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY) # Check if we reach the end
+    isSuccess = tsteps > 0
     # Write to csv file
-    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, δ⁻=δ⁻, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs)
+    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, δ⁻=δ⁻, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs, steps=length(tsteps))
 
     filename = "results/ReportReACTv5_" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
@@ -52,22 +53,23 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
 end
 
 
-runBenchmark("ISS", (2.0)^6 * 6e-4, 6e-4, load_iss, 1)
-GC.gc()
-runBenchmark("beam", (2.0)^5 * 5e-5, 5e-5, load_beam, 1)
+runBenchmark("ISS", (2.0)^6 * 6e-4, 6e-4, load_iss, strat)
 GC.gc()
 
-runBenchmark("motor", (2.0)^4 * 1e-3, 1e-3, load_motor, 1)
+runBenchmark("beam", (2.0)^5 * 5e-5, 5e-5, load_beam, strat)
 GC.gc()
 
-runBenchmark("pde", (2.0)^13 * 3e-4, 3e-4, load_pde, 1)
+runBenchmark("motor", (2.0)^3 * 1e-3, 1e-3, load_motor, strat)
 GC.gc()
 
-runBenchmark("building", (2.0)^10 * 2e-3, 2e-3, load_building, 1)
+runBenchmark("pde", (2.0)^10 * 3e-4, 3e-4, load_pde, strat)
 GC.gc()
 
-runBenchmark("heatInput", (2.0)^11 * 1e-3, 1e-3, load_heat_input, 1)
+runBenchmark("building", (2.0)^9 * 2e-3, 2e-3, load_building, strat)
 GC.gc()
 
-runBenchmark("mna1", (2.0)^12 * 4e-4, 4e-4, load_mna1, 1)
+runBenchmark("heatInput", (2.0)^10 * 1e-3, 1e-3, load_heat_input, strat)
+GC.gc()
+
+runBenchmark("mna1", (2.0)^11 * 4e-4, 4e-4, load_mna1, strat)
 GC.gc()
