@@ -5,14 +5,14 @@ ReACT is a reachability algorithm for linear time invarient systems.
 It introduces variable time steps and a new discretization technique found [Here.](ReACTDiscretize.jl)
 
 ## Usage
-To use ReACT install a julia interpreter found [here](https://julialang.org/downloads/) and install the relevant packages by running [the setup file](setupLibraries.jl)
+To use ReACT install a julia interpreter found [Here](https://julialang.org/downloads/) and install the relevant packages by running [The Setup File](setupLibraries.jl)
 
-To start use the [base example](baseExample.jl) which produces a plot using ReACT.
+To start use the [Base Example](baseExample.jl) which produces a plot using ReACT. Here you can also adjust time step sizes and which model to plot.
 
-To run the SLICOT benchmarks go to [testSuite](testSuite.jl), which can be adapted further.
+To run the SLICOT benchmarks go to [Our Test Suite](testSuite.jl).
 Additionally you can also run benchmarks for [LGG](LGG09Test.jl) and [BFFPSV](BFFPSV18Test.jl).
 
-Notably there exists ReACT and ReACTv2. Where ReACTv2 is the one featured in our paper. ReACT is similar to ReACTv2 but uses Zonotopes for the homogenous solution. For plots we use ReACT, not ReACTv2.
+Importantly we refer to our approach (Algorithm 3) as ReACT found [Here.](ReACT)
 
 ## Authors
 This repository has been made by:
