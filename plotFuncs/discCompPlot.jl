@@ -1,6 +1,6 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, Plots.PlotMeasures, LaTeXStrings
-
+gr()
 
 include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")
@@ -167,6 +167,7 @@ yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0"
 
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe region", c=:black, fillstyle=:/)
 xlims!(0, maximum(T))
+lens!(p, [9.25, 9.65], [0.096, 0.102], inset=(1, bbox(0.07, 0.7, 0.29, 0.25)), lc=:black, xtick=[], ytick=[], tickfont=font(20, "Times"), subplot=2)
 
 savefig(p, "plots/" * name * ".pdf")
 plot(p)
