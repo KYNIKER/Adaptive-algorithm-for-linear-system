@@ -24,12 +24,11 @@ function ReACTDiscretizeLazy(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonot
         isInvA = isinvertible(A)
 
         A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
-        Φcache = sum(A) == abs(sum(A)) ? ϕ : nothing
         P2A_abs = ReachabilityAnalysis.Exponentiation.Φ₂(A_abs, δ⁻, alg, isInvA, nothing)
-
 
         dU = d * U
         E_ψ = symmetric_interval_hull(P2A_abs * symmetric_interval_hull(A * U))
+        P = dU ⊕ E_ψ
         E⁺ = symmetric_interval_hull(P2A_abs * symmetric_interval_hull((A * A) * X0))
         lt = ϕ * X0 ⊕ dU
         rt = E_ψ ⊕ E⁺
@@ -63,13 +62,11 @@ m = initialTimeStep / 2
 steps = 10
 
 palette = Plots.palette(:fes10)
-LazySets.Comparison.set_tolerance(Float64)
-LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 1.0
 
 A = [0. 1.;
     -2.5 0.]
-P₁ = Zonotope([0.5, 1.5], [0.0 0.2 0.05; 0.45 -0.17 0.0]) #Zonotope([0., 1.5], [[0.0; 0.05]])
+P₁ = Zonotope([0.5, 1.5], [0.0 0.2 0.05; 0.45 -0.17 0.0])
 
 dimToPlot = 2
 # No input
