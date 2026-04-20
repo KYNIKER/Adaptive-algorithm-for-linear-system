@@ -37,8 +37,8 @@ U = Zonotope(zeros(dim(P₁)), [zeros(dim(P₁))])
 
 constraint = isa(constraint, Array) ? constraint : [constraint]
 
-boxes1, timesteps1, attemptsRecorder1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep / 2^3, STRATEGY)
-shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, 2)
+boxes1, timesteps1 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep / 2^3, [-constraint[1].a, constraint[1].a], STRATEGY)
+shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 
 # Get new values
 U = Zonotope(zeros(dim(P₁)), [zeros(dim(P₁))])
@@ -46,8 +46,8 @@ initialTimeStep = 0.1
 
 println("Starting second simulation with timestep size: ", initialTimeStep)
 
-boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, STRATEGY)
-shapes2, maxVal2, minVal2 = plotProjectedFlowpipe(boxes2, timesteps2, 0, 2)
+boxes2, timesteps2= PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, initialTimeStep, [constraint[1].a, -constraint[1].a], STRATEGY)
+shapes2, maxVal2, minVal2 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 
 println("Finished simulations")
 

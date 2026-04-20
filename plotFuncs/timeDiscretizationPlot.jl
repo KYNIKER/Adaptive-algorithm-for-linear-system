@@ -1,18 +1,14 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, Plots.PlotMeasures, LaTeXStrings
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, Plots.PlotMeasures, LaTeXStrings
 
 
 include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
-include("../models/motor/motor_load.jl")
 include("../models/building/building_load.jl")
 include("../models/PDE/pde_load.jl")
 include("../models/ISS/iss_load.jl")
 include("../models/beam/beam_load.jl")
-include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
-include("../models/MNA5/mna5_load.jl")
-#include("CegarFunctions.jl")
 include("../ReACT.jl")
 include("plotHelper.jl")
 include("../ReACTDiscretize.jl")

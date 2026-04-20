@@ -28,9 +28,6 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         rt = minkowski_sum(E_ψ, E⁺)
         f = minkowski_sum(lt, rt)
         disc = overapproximate(CH(X0, f), Zonotope)
-        #Φ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, nothing)
-        #P = linear_map(Φ₁, U)
-        #println(disc)
         while d < δ⁺
             tdiscritezationDict[d] = copy(disc)
             tinputDiscritezationDict[d] = copy(P)
@@ -43,7 +40,6 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
                 end
             end
             tphiDict[d] = copy(ϕ)
-            #tΦ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, Φcache)
             disc = overapproximate(CH(disc, minkowski_sum(P, linear_map(ϕ, disc))), Zonotope)
             P = minkowski_sum(P, linear_map(ϕ, P))
             mul!(tempM, ϕ, ϕ)

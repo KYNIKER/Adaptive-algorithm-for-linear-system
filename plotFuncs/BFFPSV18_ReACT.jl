@@ -9,7 +9,7 @@ include("../models/ISS/iss_load.jl")
 include("../models/beam/beam_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("plotHelper.jl")
-include("../ReACTv2.jl")
+include("../ReACT.jl")
 
 name = "BFFPSV18vsReACTBuilding"
 load_func = load_heat_input
@@ -29,7 +29,7 @@ STRATEGY = 1
 tVal = maximum(T)
 n = size(A, 1)
 
-boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
+boxes1, timesteps1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
 
 shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 # LGG

@@ -8,7 +8,6 @@ include("models/ISS/iss_load.jl")
 include("models/beam/beam_load.jl")
 include("models/MNA1/mna1_load.jl")
 include("ReACT.jl")
-include("ReACTv2.jl")
 include("helperfunctions.jl")
 
 
@@ -16,6 +15,7 @@ include("helperfunctions.jl")
 function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     LazySets.load_expokit()
     println("Running benchmark for: ", name)
+    #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
     BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
 
     # Actual run
@@ -39,7 +39,7 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     # Write to csv file
     df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, δ⁻=δ⁻, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs)
 
-    filename = "results/ReACT_" * name * "Results" * ".csv"
+    filename = "results/ReportReACTv5_" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim=";", append=true)
@@ -53,48 +53,6 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     println("Completed run for: ", name)
 end
 
-function runBenchmarkv2(name, initialTimeStep, δ⁻, load_func, STRATEGY)
-    LazySets.load_expokit()
-    println("Running benchmark for: ", name)
-    #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
-    BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
-
-    # Actual run
-    GC.gc()# Force garbage collection
-    A, B, ballβ, P₁, T, constraint, _ = load_func() # load
-
-    b = @benchmarkable _ = ReACTWithSupport($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $δ⁻, $STRATEGY)
-
-    y = run(b; verbose=true)
-    println("Run completed.")
-
-    # Convert time to seconds from nanoseconds
-    timeList = []
-    for timeVal in y.times
-        push!(timeList, timeVal / 1e9)
-    end
-
-
-    isSuccess = ReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY) # Check if we reach the end
-
-    # Write to csv file
-    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, δ⁻=δ⁻, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs)
-
-    filename = "results/Report2ReACTv5_" * name * "Results" * ".csv"
-    if isfile(filename)# Check if file exists
-        open(filename, "a") do File
-            CSV.write(File, df, delim=";", append=true)
-        end
-    else
-        open(filename, "w") do File
-            CSV.write(File, df, delim=";", writeheader=true)
-        end
-    end
-
-    println("Completed run for: ", name)
-end
-
-# v1
 
 runBenchmark("ISS", (2.0)^6 * 6e-4, 6e-4, load_iss, 1)
 GC.gc()
@@ -114,26 +72,4 @@ runBenchmark("heatInput", (2.0)^11 * 1e-3, 1e-3, load_heat_input, 1)
 GC.gc()
 
 runBenchmark("mna1", (2.0)^12 * 4e-4, 4e-4, load_mna1, 1)
-GC.gc()
-
-# v2
-
-runBenchmarkv2("ISS", (2.0)^6 * 6e-4, 6e-4, load_iss, 1)
-GC.gc()
-runBenchmarkv2("beam", (2.0)^5 * 5e-5, 5e-5, load_beam, 1)
-GC.gc()
-
-runBenchmarkv2("motor", (2.0)^4 * 1e-3, 1e-3, load_motor, 1)
-GC.gc()
-
-runBenchmarkv2("pde", (2.0)^13 * 3e-4, 3e-4, load_pde, 1)
-GC.gc()
-
-runBenchmarkv2("building", (2.0)^10 * 2e-3, 2e-3, load_building, 1)
-GC.gc()
-
-runBenchmarkv2("heatInput", (2.0)^11 * 1e-3, 1e-3, load_heat_input, 1)
-GC.gc()
-
-runBenchmarkv2("mna1", (2.0)^12 * 4e-4, 4e-4, load_mna1, 1)
 GC.gc()

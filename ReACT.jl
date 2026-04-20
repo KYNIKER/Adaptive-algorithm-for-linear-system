@@ -1,18 +1,23 @@
 using LazySets, LinearAlgebra
+
 include("ReACTDiscretize.jl")
-
 function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
-
-    m = copy(δ⁻)
+    #XDim, _ = size(genmat(X0))
+    m = δ⁻#initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
+    elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(m)) - 1)
     phiDict = Dict{Float64,Matrix{Float64}}()
+    sizehint!(phiDict, elems)
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(discritezationDict, elems)
     inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
+    sizehint!(inputDiscritezationDict, elems)
 
     constraintProjVectors = map(x -> x.a, constraint)
-    constraintProjBounds = ρ.(constraintProjVectors, constraint)
+    oldConstraintProjVectors = copy(constraintProjVectors)
+    constraintProjBounds = map(x -> x.b, constraint)
 
-    discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
+
 
     time::Float64 = minimum(interval)
     endtime::Float64 = maximum(interval)
@@ -21,18 +26,19 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
     attemptsRecorder = Integer[]
 
-    V::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
+
+    discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
+
+    for key in keys(phiDict)
+        phiDict[key] = permutedims(phiDict[key])
+    end
+
     Sρ = zeros(Float64, length(constraint))
-    newR::Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
+    newRR = discritezationDict[initialTimeStep]
     i = 1
 
+    ϕt::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
 
-    Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
-    tempM = similar(Φ)
-    ϕt = similar(Φ)
-    newRR = copy(newR)
-
-    # Main simulation loop
 
     while time < endtime
 
@@ -45,26 +51,17 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
             end
 
             if changedTimeStep
-                newR = discritezationDict[currentTimeStep]
-                V = copy(inputDiscritezationDict[currentTimeStep])
+                newRR = discritezationDict[currentTimeStep]
                 ϕt = phiDict[currentTimeStep]
-                newRR = linear_map(Φ, newR)
-                V = linear_map(Φ, V)
-            else
-                newRR = linear_map(ϕt, newRR)
-                V = linear_map(ϕt, V)
             end
+            constraintProjVectors = map(x -> ϕt * x, oldConstraintProjVectors)
 
             changedTimeStep = false
-            inhom = map(x -> ρ(x, V), constraintProjVectors)
-
-            if all((inputAccumulated + inputCurrent + ρ(x, newRR)) <= y for (inputAccumulated, inputCurrent, x, y) in zip(Sρ, inhom, constraintProjVectors, constraintProjBounds))
+            if all((input + ρ(x, newRR)) <= y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))
+                Sρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 approveFlag = true
-                Sρ += inhom
-                mul!(tempM, Φ, ϕt)
-                copy!(Φ, tempM)
+                oldConstraintProjVectors = constraintProjVectors
             else
-                newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2
                 changedTimeStep = true
                 attempts = attempts + 1
@@ -78,6 +75,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
         # Reset / apply strategy
         # Only do this if the current timestep is less than the initial
+
         if STRATEGY == 0
             # Only reduce
         elseif STRATEGY == 1
@@ -102,18 +100,19 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     return true
 end
 
-#  React with no input
+# No input version (U::Nothing)
 function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Nothing, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
     m = copy(δ⁻)
     changedTimeStep = true
-
     phiDict = Dict{Float64,Matrix{Float64}}()
     discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
 
-    discritezationDict, _, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
 
     constraintProjVectors = map(x -> x.a, constraint)
-    constraintProjBounds = ρ.(constraintProjVectors, constraint)
+    oldConstraintProjVectors = copy(constraintProjVectors)
+    constraintProjBounds = map(x -> x.b, constraint)
+
+
 
     time::Float64 = minimum(interval)
     endtime::Float64 = maximum(interval)
@@ -122,39 +121,38 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
     attemptsRecorder = Integer[]
 
+
+    discritezationDict, _, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
+
+    for key in keys(phiDict)
+        phiDict[key] = permutedims(phiDict[key])
+    end
+
     newR::Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
     i = 1
 
-
-    Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
-    tempM = similar(Φ)
-    ϕt = similar(Φ)
+    ϕt::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
     newRR = copy(newR)
 
-    while time < endtime
 
+    while time < endtime
         attempts = 1
         approveFlag = false
-
         while !approveFlag
             if currentTimeStep < m
                 return false
             end
 
             if changedTimeStep
-                newR = discritezationDict[currentTimeStep]
+                newRR = discritezationDict[currentTimeStep]
                 ϕt = phiDict[currentTimeStep]
-                newRR = linear_map(Φ, newR)
-            else
-                newRR = linear_map(ϕt, newRR)
             end
-
+            constraintProjVectors = map(x -> ϕt * x, oldConstraintProjVectors)
             changedTimeStep = false
 
             if all(ρ(x, newRR) <= y for (x, y) in zip(constraintProjVectors, constraintProjBounds))
                 approveFlag = true
-                mul!(tempM, Φ, ϕt)
-                copy!(Φ, tempM)
+                oldConstraintProjVectors = constraintProjVectors
             else
                 newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2
@@ -193,18 +191,24 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     return true
 end
 
-# This is solely used for plotting, not benchmarking
-function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
-    m = copy(δ⁻)
+function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, dirs, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5; naive=false) where {N}
+    #XDim, _ = size(genmat(X0))
+    m = δ⁻#initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
-    phiDict = Dict{Float64,Matrix{Float64}}()
-    discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
+    #elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
+    phiDict = Dict()#Dict{Float64,Matrix{Float64}}()
+    #sizehint!(phiDict, elems)
+    discritezationDict = Dict()#Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
+    #sizehint!(discritezationDict, elems)
+    inputDiscritezationDict = Dict()#Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
+    #sizehint!(inputDiscritezationDict, elems)
 
     constraintProjVectors = map(x -> x.a, constraint)
+    oldConstraintProjVectors = copy(constraintProjVectors)
     constraintProjBounds = map(x -> x.b, constraint)
 
-    discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
+    dirProjVectors = map(x -> x, dirs)
+    oldDirProjVectors = copy(dirProjVectors)
 
     time::Float64 = minimum(interval)
     endtime::Float64 = maximum(interval)
@@ -212,22 +216,37 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     currentTimeStep = copy(initialTimeStep)
 
     attemptsRecorder = Integer[]
-    V::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
+
+    if naive
+        j = copy(m)
+        while j <= initialTimeStep
+            println("hello? $j")
+            tempd, tempi, tempp = ReACTDiscretize(A, B, X0, U, j, j, alg, maxOrder, reduceOrder)
+            discritezationDict[j] = copy(tempd[j])
+            inputDiscritezationDict[j] = copy(tempi[j])
+            phiDict[j] = copy(tempp[j]) #map(x -> getindex(x, j), ReACTDiscretize(A, B, X0, U, j, j, alg, maxOrder, reduceOrder))
+            j = j * 2
+        end
+        println("Naive disc done. Keys: $(keys(discritezationDict))")
+    else
+        discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
+    end
+
+    for key in keys(phiDict)
+        phiDict[key] = permutedims(phiDict[key])
+    end
+
     Sρ = zeros(Float64, length(constraint))
-    newR::Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
+
+    newRR = discritezationDict[initialTimeStep]
     i = 1
 
-    reachSet = Vector{Zonotope{N,Vector{N},Matrix{N}}}()
-    timeStepRecorder = Vector{Float64}()
+    ϕt::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
 
+    dirvals = []
+    dρ = zeros(Float64, length(dirs))
+    timeStepRecorder = []
 
-    Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
-    tempM = similar(Φ)
-    ϕt = similar(Φ)
-    newRR = copy(newR)
-    Ub = overapproximate(linear_map(B, U), Zonotope)
-    maxVal = 0.
-    minVal = 0.
     while time < endtime
 
         attempts = 1
@@ -235,30 +254,31 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
         while !approveFlag
             if currentTimeStep < m
-                return reachSet, timeStepRecorder, attemptsRecorder
+                println("$time $m $currentTimeStep, $initialTimeStep")
+                return dirvals, timeStepRecorder
             end
 
             if changedTimeStep
-                newR = discritezationDict[currentTimeStep]
+                newRR = discritezationDict[currentTimeStep]
+                #V = copy(inputDiscritezationDict[currentTimeStep])
                 ϕt = phiDict[currentTimeStep]
-                newRR = linear_map(Φ, discritezationDict[currentTimeStep])
-                V = linear_map(Φ, V)
-            else
-                newRR = linear_map(ϕt, newRR)
-                V = linear_map(ϕt, V)
             end
-            #V = linear_map(ReachabilityAnalysis.Exponentiation.Φ₁(A, time, alg, false, nothing), Ub)
-            changedTimeStep = false
-            inhom = map(x -> ρ(x, V), constraintProjVectors)
+            constraintProjVectors = map(x -> ϕt * x, oldConstraintProjVectors)
+            dirProjVectors = map(x -> ϕt * x, oldDirProjVectors)
 
-            if all((input + ρ(x, newRR)) < y for (input, x, y) in zip(inhom, constraintProjVectors, constraintProjBounds))
+            changedTimeStep = false
+            #hom = map(x -> ρ(x, newRR), constraintProjVectors)
+            if all((input + ρ(x, newRR)) <= y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))                #if reduce(&, <=(Sρ + hom, constraintProjBounds))
+                #inhom = map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
+                Sρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
+                push!(dirvals, copy(dρ) + map(x -> ρ(x, newRR), dirProjVectors))
+                dρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldDirProjVectors)
                 approveFlag = true
-                push!(reachSet, minkowski_sum(copy(newRR), copy(V))) #minkowski_sum(newRR, V)) # Add homogeneous and input to reachSet
-                Sρ = copy(inhom)
-                mul!(tempM, Φ, ϕt)
-                copy!(Φ, tempM)
+                oldConstraintProjVectors = constraintProjVectors
+                oldDirProjVectors = dirProjVectors
+                push!(timeStepRecorder, currentTimeStep)
             else
-                newR = copy(newR)
+                #newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2
                 changedTimeStep = true
                 attempts = attempts + 1
@@ -267,13 +287,12 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
 
         push!(attemptsRecorder, attempts)
-        push!(timeStepRecorder, currentTimeStep)
-
         i = i + 1
         time = time + currentTimeStep
 
         # Reset / apply strategy
         # Only do this if the current timestep is less than the initial
+
         if STRATEGY == 0
             # Only reduce
         elseif STRATEGY == 1
@@ -294,142 +313,6 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
             end
         end
     end
-    #println(minVal, " ", maxVal)
-    println(Sρ)
-    println(map(x -> ρ(x, reachSet[end]), constraintProjVectors))
-    return reachSet, timeStepRecorder, attemptsRecorder
-end
 
-# This shows off our approach with spaceex discretization. Also only for plotting
-function PlotReACTIndividualDisc(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
-    # Here we use typical spaceex discretization for each timestep size
-    m = copy(δ⁻)
-
-    changedTimeStep = true
-    phiDict = Dict{Float64,Matrix{Float64}}()
-    discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-
-    constraintProjVectors = map(x -> x.a, constraint)
-    constraintProjBounds = map(x -> x.b, constraint)
-
-    phiDict = Dict{Float64,Matrix{Float64}}()
-    discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-
-    tempU = linear_map(B, U)
-    d = m
-    while d <= initialTimeStep
-        let ϕ::Matrix{Float64} = ReachabilityAnalysis.Exponentiation._exp(A, d, alg)
-            isInvA = isinvertible(A)
-
-            A_abs = ReachabilityAnalysis.Exponentiation.elementwise_abs(A)
-            P2A_abs = ReachabilityAnalysis.Exponentiation.Φ₂(A_abs, d, alg, isInvA, nothing)
-
-
-            dU = overapproximate(d * tempU, Zonotope)
-            E_ψ = convert(Zonotope, symmetric_interval_hull(linear_map(P2A_abs, symmetric_interval_hull(linear_map(A, tempU)))))
-
-            E⁺ = convert(Zonotope, symmetric_interval_hull(linear_map(P2A_abs, symmetric_interval_hull(linear_map(A * A, X0)))))
-            lt = minkowski_sum(linear_map(ϕ, X0), dU)
-            rt = minkowski_sum(E_ψ, E⁺)
-            f = minkowski_sum(lt, rt)
-            disc = overapproximate(CH(X0, f), Zonotope)
-            Φ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, nothing)
-            P = linear_map(Φ₁, tempU)
-            discritezationDict[d] = copy(disc)
-            inputDiscritezationDict[d] = copy(P)
-            phiDict[d] = copy(ϕ)
-            d *= 2
-        end
-    end
-
-    time::Float64 = minimum(interval)
-    endtime::Float64 = maximum(interval)
-
-    currentTimeStep = copy(initialTimeStep)
-
-    attemptsRecorder = Integer[]
-
-    V::Zonotope{N,Vector{N},Matrix{N}} = copy(inputDiscritezationDict[initialTimeStep])
-    Sρ = zeros(Float64, length(constraint))
-    newR::Zonotope{N,Vector{N},Matrix{N}} = discritezationDict[initialTimeStep]
-    i = 1
-
-    reachSet = Vector{Zonotope{N,Vector{N},Matrix{N}}}()
-    timeStepRecorder = Vector{Float64}()
-
-
-    Φ::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
-    tempM = similar(Φ)
-    ϕt = similar(Φ)
-    newRR = copy(newR)
-    Ub = overapproximate(linear_map(B, U), Zonotope)
-    while time < endtime
-
-        attempts = 1
-        approveFlag = false
-
-        while !approveFlag
-            if currentTimeStep < m
-                return reachSet, timeStepRecorder, attemptsRecorder
-            end
-
-            if changedTimeStep
-                newR = discritezationDict[currentTimeStep]
-                ϕt = phiDict[currentTimeStep]
-                newRR = linear_map(Φ, discritezationDict[currentTimeStep])
-            else
-                newRR = linear_map(ϕt, newRR)
-            end
-            V = linear_map(ReachabilityAnalysis.Exponentiation.Φ₁(A, time, alg, false, nothing), Ub)
-            changedTimeStep = false
-            inhom = map(x -> ρ(x, V), constraintProjVectors)
-
-            if all((input + ρ(x, newRR)) < y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))
-                approveFlag = true
-                push!(reachSet, minkowski_sum(newRR, V))
-                Sρ = copy(inhom)
-
-                mul!(tempM, Φ, ϕt)
-                copy!(Φ, tempM)
-            else
-
-                newR = copy(newR)
-                currentTimeStep = currentTimeStep / 2
-                changedTimeStep = true
-                attempts = attempts + 1
-            end
-        end
-
-
-        push!(attemptsRecorder, attempts)
-        push!(timeStepRecorder, currentTimeStep)
-
-        i = i + 1
-        time = time + currentTimeStep
-
-        # Reset / apply strategy
-        # Only do this if the current timestep is less than the initial
-        if STRATEGY == 0
-            # Only reduce
-        elseif STRATEGY == 1
-            # always try double
-            if currentTimeStep < initialTimeStep
-                currentTimeStep = currentTimeStep * 2
-                changedTimeStep = true
-            end
-        elseif STRATEGY == 2
-            # If attemptsrecorder past 4 are successes, double timestep
-            if currentTimeStep < initialTimeStep
-                lowest = min(4, i - 1)
-                window = @view attemptsRecorder[i-lowest:i-1]
-                if all(window .== 1)
-                    currentTimeStep = currentTimeStep * 2
-                    changedTimeStep = true
-                end
-            end
-        end
-    end
-    return reachSet, timeStepRecorder, attemptsRecorder
+    return dirvals, timeStepRecorder
 end

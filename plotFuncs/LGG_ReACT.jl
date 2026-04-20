@@ -1,5 +1,4 @@
-# Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
 gr()
 
 include("../helperfunctions.jl")
@@ -11,7 +10,7 @@ include("../models/ISS/iss_load.jl")
 include("../models/beam/beam_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("plotHelper.jl")
-include("../ReACTv2.jl")
+include("../ReACT.jl")
 
 name = "LGGvsReACTBuilding"
 load_func = load_building
@@ -27,7 +26,7 @@ Digits = 2e-3
 initialTimeStep = (2.0)^9 * 2e-3
 STRATEGY = 1
 
-boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
+boxes1, timesteps1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
 
 shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 tVal = maximum(T)

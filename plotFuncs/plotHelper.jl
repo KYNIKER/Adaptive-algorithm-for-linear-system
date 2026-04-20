@@ -102,8 +102,8 @@ end
 
 function plotSupportFlowpipe(boxes2, timesteps, pos, neg)
     corners2 = Vector(undef, size(boxes2, 1))
-    maxval = -∞
-    minval = ∞
+    maxval = -Inf
+    minval = Inf
     time = 0.0
 
     for i in 1:(size(boxes2, 1))

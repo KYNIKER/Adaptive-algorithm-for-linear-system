@@ -1,22 +1,16 @@
-# Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures, Polyhedra, CDDLib
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures, Polyhedra, CDDLib
 
 
 include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
-include("../models/motor/motor_load.jl")
 include("../models/building/building_load.jl")
 include("../models/PDE/pde_load.jl")
 include("../models/ISS/iss_load.jl")
 include("../models/beam/beam_load.jl")
-include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
-include("../models/MNA5/mna5_load.jl")
-#include("CegarFunctions.jl")
-#include("../CegarInhomogenous.jl")
 include("plotHelper.jl")
-include("../ReACTv2.jl")
+include("../ReACT.jl")
 
 name = "LGGvsReACTISSSupport"
 load_func = load_iss
@@ -34,7 +28,7 @@ initialTimeStep = (2.0)^5 * Digits #(2.0)^10 * Digits #
 STRATEGY = 2
 
 
-boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, constraint[2].a], STRATEGY)
+boxes1, timesteps1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, constraint[2].a], STRATEGY)
 
 shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 # LGG
