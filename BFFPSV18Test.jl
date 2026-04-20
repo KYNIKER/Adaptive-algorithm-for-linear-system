@@ -45,8 +45,7 @@ end
 
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
 function doBFFPSV18JuliaTest(load_func, name)
-    namePrint = "BFFPSV18_" * name
-    println("Running benchmark for: ", namePrint, "...")
+    println("Running benchmark for: ", name, "...")
     BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
     BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
 
@@ -94,7 +93,7 @@ function doBFFPSV18JuliaTest(load_func, name)
     end
 
     df = DataFrame(name=name, avgTime=mean(timeList), medianTime=median(timeList), success=res)
-    filename = "results/Report" * namePrint * "JuliaResults" * ".csv"
+    filename = "results/BFFPSV_" * name * "JuliaResults" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim=";", append=true)
@@ -105,10 +104,8 @@ function doBFFPSV18JuliaTest(load_func, name)
         end
     end
 
-    println("Finished running benchmark for: ", namePrint, "!")
+    println("Finished running benchmark for: ", name, "!")
 end
-
-println("Woosh")
 
 names = ["beam", "building", "heat", "iss", "motor", "pde", "mna1"]
 loadFuncs = [load_beam, load_building, load_heat_input, load_iss, load_motor, load_pde, load_mna1]

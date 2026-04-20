@@ -88,15 +88,6 @@ for i in eachindex(shapes2)
     end
 end
 
-# Plot real coswave
-#ω = sqrt(2.5)
-#t = 0:0.01:10
-#x1 = 1.5 .* cos.(ω .* t)
-
-#plot!(p, t, x1, label="Cos(t)", c=:red)
-
-# Plot constraint
-
 plot!(LazySets.HalfSpace(-constraint[1].a, -constraint[1].b), lab="Unsafe region", c=:black, alpha=1.0, fillstyle=:/)
 
 

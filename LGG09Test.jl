@@ -40,8 +40,7 @@ end
 
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
 function doLGG09JuliaTest(load_func, name)
-    namePrint = "LGG09_" * name
-    println("Running benchmark for: ", namePrint, "...")
+    println("Running benchmark for: ", name, "...")
     BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
     BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
 
@@ -80,7 +79,7 @@ function doLGG09JuliaTest(load_func, name)
     end
 
     df = DataFrame(name=name, avgTime=mean(timeList), medianTime=median(timeList), success=res)
-    filename = "results/Report" * namePrint * "JuliaResults" * ".csv"
+    filename = "results/LGG09_" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim=";", append=true)
@@ -91,7 +90,7 @@ function doLGG09JuliaTest(load_func, name)
         end
     end
 
-    println("Finished running benchmark for: ", namePrint, "!")
+    println("Finished running benchmark for: ", name, "!")
 end
 
 names = ["beam", "building", "heat", "iss", "motor", "pde", "mna1"]

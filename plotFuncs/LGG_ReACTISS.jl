@@ -1,4 +1,3 @@
-# Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures, Polyhedra, CDDLib
 
 include("../models/heat/heat_load.jl")

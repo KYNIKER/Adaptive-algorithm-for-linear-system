@@ -1,4 +1,4 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, Plots.PlotMeasures, LaTeXStrings
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Plots.PlotMeasures, LaTeXStrings
 
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
