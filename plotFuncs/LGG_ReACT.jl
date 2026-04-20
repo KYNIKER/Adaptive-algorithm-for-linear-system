@@ -17,8 +17,6 @@ A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
 palette = Plots.palette(:fes10)
 c1 = palette[9]
 c2 = palette[6]
-#LazySets.Comparison.set_tolerance(Float64)
-#LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
 Digits = 2e-3
@@ -33,19 +31,15 @@ n = size(A, 1)
 
 println(maxVal1, minVal1)
 
+# LGG
+
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
 alg = LGG09(δ=2e-3, template=CustomDirections([sparsevec([25], [1.0], 48)]), approx_model=Forward())
 prob = InitialValueProblem(sys, P₁)
 
-sol = solve(prob; T=tVal, alg=LGG09(; δ=0.002, vars=(25), n=48)) #solve(prob, alg; T=20.0) # Running the actual time
+sol = solve(prob; T=tVal, alg=LGG09(; δ=0.002, vars=(25), n=48))
 solution_proj = LazySets.project(sol, [dimToPlot])
 
-#=
-sol = solve(prob; T=tVal,
-    alg=BFFPSV18(δ=2e-3, vars=[25], partition=[i:i for i in 1:48]))
-=#
-#sol.options[:plot_vars] = [0, 25]
-#res = mapreduce(c -> ρ(c.a, sol) <= c.b, &, constraint) # Check if hits constraint
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
     legendfont=font(12, "Times"),
     tickfont=font(8, "Times"),
@@ -64,7 +58,6 @@ constraintValAdjusted = constraint[1].b * 1.1
 maxVal = max(maxVal1, constraintValAdjusted)
 minVal = min(minVal1, constraintValAdjusted)
 
-#p = plot(dpi=300, thickness_scaling=1, xlims=(0, maximum(T)), xlabel="Time", ylabel="Value")
 
 ylims!((minVal, maxVal))
 yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0", string(constraint[1].b)])

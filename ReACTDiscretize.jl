@@ -1,4 +1,4 @@
-export ReACTDiscretizeBase
+export ReACTDiscretize
 using LinearAlgebra, LazySets, ReachabilityAnalysis
 
 isinvertible(x) = applicable(inv, x) && isone(inv(Matrix(x)) * x)
@@ -10,7 +10,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
 
 
     let ϕ::Matrix{Float64} = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
-        U = linear_map(B, U) #overapproximate(concretize(B * U), Zonotope) 
+        U = linear_map(B, U)
         tempM = similar(ϕ)
         d = δ⁻
         isInvA = isinvertible(A)

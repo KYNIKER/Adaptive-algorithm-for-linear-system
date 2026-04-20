@@ -8,7 +8,7 @@ include("models/beam/beam_load.jl")
 include("models/MNA1/mna1_load.jl")
 include("ReACT.jl")
 
-strat = 2
+strategy = 2
 
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
 function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
@@ -53,23 +53,23 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
 end
 
 
-runBenchmark("ISS", (2.0)^5 * 6e-4, 6e-4, load_iss, strat)
+runBenchmark("ISS", (2.0)^5 * 6e-4, 6e-4, load_iss, strategy)
 GC.gc()
 
-runBenchmark("beam", (2.0)^5 * 5e-5, 5e-5, load_beam, strat)
+runBenchmark("beam", (2.0)^5 * 5e-5, 5e-5, load_beam, strategy)
 GC.gc()
 
-runBenchmark("motor", (2.0)^4 * 1e-3, 1e-3, load_motor, strat)
+runBenchmark("motor", (2.0)^4 * 1e-3, 1e-3, load_motor, strategy)
 GC.gc()
 
-runBenchmark("pde", (2.0)^10 * 3e-4, 3e-4, load_pde, strat)
+runBenchmark("pde", (2.0)^10 * 3e-4, 3e-4, load_pde, strategy)
 GC.gc()
 
-runBenchmark("building", (2.0)^9 * 2e-3, 2e-3, load_building, strat)
+runBenchmark("building", (2.0)^9 * 2e-3, 2e-3, load_building, strategy)
 GC.gc()
 
-runBenchmark("heatInput", (2.0)^10 * 1e-3, 1e-3, load_heat_input, strat)
+runBenchmark("heatInput", (2.0)^10 * 1e-3, 1e-3, load_heat_input, strategy)
 GC.gc()
 
-runBenchmark("mna1", (2.0)^11 * 4e-4, 4e-4, load_mna1, strat)
+runBenchmark("mna1", (2.0)^11 * 4e-4, 4e-4, load_mna1, strategy)
 GC.gc()

@@ -19,8 +19,6 @@ A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
 palette = Plots.palette(:fes10)
 c1 = palette[9]
 c2 = palette[6]
-#LazySets.Comparison.set_tolerance(Float64)
-#LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
 Digits = 1e-3
@@ -29,12 +27,11 @@ STRATEGY = 2
 
 tVal = maximum(T)
 n = size(A, 1)
-#tsteps = ReACTWithSupport(A, B, (2.0)^10 * 1e-3, T, P₁, ballβ, constraint, 1e-3, STRATEGY) # Check if we reach the end
 
 boxes1, timesteps1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
 
 shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
-# LGG
+# BFFPSV
 δ = 0.00
 
 sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)

@@ -2,8 +2,7 @@ using LazySets, LinearAlgebra
 
 include("ReACTDiscretize.jl")
 function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
-    #XDim, _ = size(genmat(X0))
-    m = δ⁻#initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    m = δ⁻
     changedTimeStep = true
     elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(m)) - 1)
     phiDict = Dict{Float64,Matrix{Float64}}()
@@ -21,11 +20,9 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
     time::Float64 = minimum(interval)
     endtime::Float64 = maximum(interval)
-
     currentTimeStep = copy(initialTimeStep)
 
     attemptsRecorder = Integer[]
-
 
     discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
 
@@ -39,9 +36,7 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 
     ϕt::Matrix{Float64} = diagm(ones(Float64, size(A, 2)))
 
-
     while time < endtime
-
         attempts = 1
         approveFlag = false
 
@@ -67,7 +62,6 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
                 attempts = attempts + 1
             end
         end
-
 
         push!(attemptsRecorder, attempts)
         i = i + 1
@@ -118,7 +112,6 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
     endtime::Float64 = maximum(interval)
 
     currentTimeStep = copy(initialTimeStep)
-
     attemptsRecorder = Integer[]
 
 
@@ -192,16 +185,11 @@ function ReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{
 end
 
 function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, dirs, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5; naive=false) where {N}
-    #XDim, _ = size(genmat(X0))
-    m = δ⁻#initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
+    m = δ⁻
     changedTimeStep = true
-    #elems = (ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)
-    phiDict = Dict()#Dict{Float64,Matrix{Float64}}()
-    #sizehint!(phiDict, elems)
-    discritezationDict = Dict()#Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    #sizehint!(discritezationDict, elems)
-    inputDiscritezationDict = Dict()#Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    #sizehint!(inputDiscritezationDict, elems)
+    phiDict = Dict()
+    discritezationDict = Dict()
+    inputDiscritezationDict = Dict()
 
     constraintProjVectors = map(x -> x.a, constraint)
     oldConstraintProjVectors = copy(constraintProjVectors)
@@ -214,17 +202,15 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
     endtime::Float64 = maximum(interval)
 
     currentTimeStep = copy(initialTimeStep)
-
     attemptsRecorder = Integer[]
 
     if naive
         j = copy(m)
         while j <= initialTimeStep
-            println("hello? $j")
             tempd, tempi, tempp = ReACTDiscretize(A, B, X0, U, j, j, alg, maxOrder, reduceOrder)
             discritezationDict[j] = copy(tempd[j])
             inputDiscritezationDict[j] = copy(tempi[j])
-            phiDict[j] = copy(tempp[j]) #map(x -> getindex(x, j), ReACTDiscretize(A, B, X0, U, j, j, alg, maxOrder, reduceOrder))
+            phiDict[j] = copy(tempp[j])
             j = j * 2
         end
         println("Naive disc done. Keys: $(keys(discritezationDict))")
@@ -260,16 +246,13 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
 
             if changedTimeStep
                 newRR = discritezationDict[currentTimeStep]
-                #V = copy(inputDiscritezationDict[currentTimeStep])
                 ϕt = phiDict[currentTimeStep]
             end
             constraintProjVectors = map(x -> ϕt * x, oldConstraintProjVectors)
             dirProjVectors = map(x -> ϕt * x, oldDirProjVectors)
 
             changedTimeStep = false
-            #hom = map(x -> ρ(x, newRR), constraintProjVectors)
             if all((input + ρ(x, newRR)) <= y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))                #if reduce(&, <=(Sρ + hom, constraintProjBounds))
-                #inhom = map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 Sρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 push!(dirvals, copy(dρ) + map(x -> ρ(x, newRR), dirProjVectors))
                 dρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldDirProjVectors)
@@ -278,7 +261,6 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
                 oldDirProjVectors = dirProjVectors
                 push!(timeStepRecorder, currentTimeStep)
             else
-                #newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2
                 changedTimeStep = true
                 attempts = attempts + 1
