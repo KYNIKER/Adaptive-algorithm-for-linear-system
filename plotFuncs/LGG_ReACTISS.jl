@@ -1,4 +1,4 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures, Polyhedra, CDDLib
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
 
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
