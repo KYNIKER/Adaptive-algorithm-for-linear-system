@@ -1,5 +1,5 @@
 # Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, PProf
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile
 include("helperfunctions.jl")
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")

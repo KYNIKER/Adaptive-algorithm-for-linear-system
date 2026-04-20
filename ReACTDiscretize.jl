@@ -28,7 +28,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         rt = minkowski_sum(E_ψ, E⁺)
         f = minkowski_sum(lt, rt)
         disc = overapproximate(CH(X0, f), Zonotope)
-        Φ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, nothing)
+        #Φ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, nothing)
         #P = linear_map(Φ₁, U)
         #println(disc)
         while d < δ⁺
