@@ -1,7 +1,5 @@
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, Plots.PlotMeasures, LaTeXStrings
 
-
-include("../helperfunctions.jl")
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
 include("../models/building/building_load.jl")

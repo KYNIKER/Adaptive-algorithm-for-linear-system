@@ -1,5 +1,4 @@
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile
-include("helperfunctions.jl")
 include("plotFuncs/plotHelper.jl")
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")

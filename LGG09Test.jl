@@ -2,7 +2,6 @@ using ReachabilityAnalysis, Plots, LazySets, BenchmarkTools, CSV, DataFrames, Ma
 
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
-include("models/motor/motor_load.jl")
 include("models/building/building_load.jl")
 include("models/PDE/pde_load.jl")
 include("models/ISS/iss_load.jl")

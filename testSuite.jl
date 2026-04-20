@@ -1,14 +1,12 @@
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, CSV, DataFrames, Expokit, ReachabilityAnalysis
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
-include("models/motor/motor_load.jl")
 include("models/building/building_load.jl")
 include("models/PDE/pde_load.jl")
 include("models/ISS/iss_load.jl")
 include("models/beam/beam_load.jl")
 include("models/MNA1/mna1_load.jl")
 include("ReACT.jl")
-include("helperfunctions.jl")
 
 
 # read the docs https://juliaci.github.io/BenchmarkTools.jl/stable/manual/
