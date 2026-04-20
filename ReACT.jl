@@ -249,7 +249,7 @@ function PlotReACT(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Mat
             end
 
             changedTimeStep = false
-            if all((input + ρ(x, newRR)) <= y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))                #if reduce(&, <=(Sρ + hom, constraintProjBounds))
+            if all((input + ρ(x, newRR)) <= y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))                
                 Sρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 push!(dirvals, copy(dρ) + map(x -> ρ(x, newRR), dirProjVectors))
                 dρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldDirProjVectors)
