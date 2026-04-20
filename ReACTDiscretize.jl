@@ -4,13 +4,13 @@ include("helperfunctions.jl")
 isinvertible(x) = applicable(inv, x) && isone(inv(Matrix(x)) * x)
 
 function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, δ⁻, δ⁺, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=10, reduceOrder::Int=10) where {N}
-    phiDict = Dict{Float64,Matrix{Float64}}()
-    discritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
-    inputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
+    tphiDict = Dict{Float64,Matrix{Float64}}()
+    tdiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
+    tinputDiscritezationDict = Dict{Float64,Zonotope{N,Vector{N},Matrix{N}}}()
 
-    U = linear_map(B, U) #overapproximate(concretize(B * U), Zonotope)
 
     let ϕ::Matrix{Float64} = ReachabilityAnalysis.Exponentiation._exp(A, δ⁻, alg)
+        U = linear_map(B, U) #overapproximate(concretize(B * U), Zonotope) 
         tempM = similar(ϕ)
         d = δ⁻
         isInvA = isinvertible(A)
@@ -32,8 +32,8 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
         #P = linear_map(Φ₁, U)
         #println(disc)
         while d < δ⁺
-            discritezationDict[d] = copy(disc)
-            inputDiscritezationDict[d] = copy(P)
+            tdiscritezationDict[d] = copy(disc)
+            tinputDiscritezationDict[d] = copy(P)
             if maxOrder > 0
                 if LazySets.order(P) > maxOrder
                     P = reduce_order(P, reduceOrder)
@@ -42,7 +42,7 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
                     disc = reduce_order(disc, reduceOrder)
                 end
             end
-            phiDict[d] = copy(ϕ)
+            tphiDict[d] = copy(ϕ)
             #tΦ₁ = ReachabilityAnalysis.Exponentiation.Φ₁(A, d, alg, isInvA, Φcache)
             disc = overapproximate(CH(disc, minkowski_sum(P, linear_map(ϕ, disc))), Zonotope)
             P = minkowski_sum(P, linear_map(ϕ, P))
@@ -54,13 +54,16 @@ function ReACTDiscretize(A, B, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope,
             if LazySets.order(disc) > maxOrder
                 disc = reduce_order(disc, reduceOrder)
             end
+            if LazySets.order(P) > maxOrder
+                P = reduce_order(P, reduceOrder)
+            end
         end
-        discritezationDict[d] = copy(disc)
-        phiDict[d] = copy(ϕ)
-        inputDiscritezationDict[d] = P
+        tdiscritezationDict[d] = copy(disc)
+        tphiDict[d] = copy(ϕ)
+        tinputDiscritezationDict[d] = P
 
     end
-    return discritezationDict, inputDiscritezationDict, phiDict
+    return tdiscritezationDict, tinputDiscritezationDict, tphiDict
 end
 
 

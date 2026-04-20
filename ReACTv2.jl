@@ -215,7 +215,7 @@ function ReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector
     return true
 end
 
-function PlotReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, dirs, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5) where {N}
+function PlotReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Vector{N},Matrix{N}}, U::Zonotope, constraint, δ⁻, dirs, STRATEGY::Integer, alg::ReachabilityAnalysis.Exponentiation.AbstractExpAlg=ReachabilityAnalysis.Exponentiation.BaseExp, maxOrder::Int=5, reduceOrder::Int=5; naive=false) where {N}
     #XDim, _ = size(genmat(X0))
     m = δ⁻#initialTimeStep / 2^(ceil(Integer, log2(initialTimeStep)) + ceil(Integer, -log2(10.0^(-Digits))) - 1)   #Calculate the smallest number larger than 10^-Digits obtained by repeatedly dividing initialTimeStep by 2.
     changedTimeStep = true
@@ -241,8 +241,20 @@ function PlotReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Ve
 
     attemptsRecorder = Integer[]
 
-
-    discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
+    if naive
+        j = copy(m)
+        while j <= initialTimeStep
+            println("hello? $j")
+            tempd, tempi, tempp = ReACTDiscretize(A, B, X0, U, j, j, alg, maxOrder, reduceOrder)
+            discritezationDict[j] = copy(tempd[j])
+            inputDiscritezationDict[j] = copy(tempi[j])
+            phiDict[j] = copy(tempp[j]) #map(x -> getindex(x, j), ReACTDiscretize(A, B, X0, U, j, j, alg, maxOrder, reduceOrder))
+            j = j * 2
+        end
+        println("Naive disc done. Keys: $(keys(discritezationDict))")
+    else
+        discritezationDict, inputDiscritezationDict, phiDict = ReACTDiscretize(A, B, X0, U, m, initialTimeStep, alg, maxOrder, reduceOrder)
+    end
 
     for key in keys(phiDict)
         phiDict[key] = permutedims(phiDict[key])
@@ -266,7 +278,7 @@ function PlotReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Ve
 
         while !approveFlag
             if currentTimeStep < m
-                println(time)
+                println("$time $m $currentTimeStep, $initialTimeStep")
                 return dirvals, timeStepRecorder
             end
 
@@ -283,8 +295,8 @@ function PlotReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Ve
             if all((input + ρ(x, newRR)) <= y for (input, x, y) in zip(Sρ, constraintProjVectors, constraintProjBounds))                #if reduce(&, <=(Sρ + hom, constraintProjBounds))
                 #inhom = map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
                 Sρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldConstraintProjVectors)
+                push!(dirvals, copy(dρ) + map(x -> ρ(x, newRR), dirProjVectors))
                 dρ += map(x -> ρ(x, inputDiscritezationDict[currentTimeStep]), oldDirProjVectors)
-                push!(dirvals, dρ + map(x -> ρ(x, newRR), dirProjVectors))
                 approveFlag = true
                 oldConstraintProjVectors = constraintProjVectors
                 oldDirProjVectors = dirProjVectors
@@ -293,7 +305,7 @@ function PlotReACTWithSupport(A, B, initialTimeStep, interval, X0::Zonotope{N,Ve
                 #newR = copy(newR)
                 currentTimeStep = currentTimeStep / 2
                 changedTimeStep = true
-                #attempts = attempts + 1
+                attempts = attempts + 1
             end
         end
 
