@@ -15,12 +15,13 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     LazySets.load_expokit()
     println("Running benchmark for: ", name)
     #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
-    BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 2
 
     # Actual run
     GC.gc()# Force garbage collection
     A, B, ballβ, P₁, T, constraint, _ = load_func() # load
 
+    local tsteps = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY) # Check if we reach the end
     b = @benchmarkable _ = ReACT($A, $B, $initialTimeStep, $T, $P₁, $ballβ, $constraint, $δ⁻, $STRATEGY)
 
     y = run(b; verbose=true)
@@ -33,10 +34,9 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     end
 
 
-    tsteps = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY) # Check if we reach the end
     isSuccess = tsteps > 0
     # Write to csv file
-    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, δ⁻=δ⁻, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs, steps=length(tsteps))
+    df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, δ⁻=δ⁻, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs, steps=tsteps)
 
     filename = "results/ReportReACTv5_" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
@@ -53,13 +53,13 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
 end
 
 
-runBenchmark("ISS", (2.0)^6 * 6e-4, 6e-4, load_iss, strat)
+runBenchmark("ISS", (2.0)^5 * 6e-4, 6e-4, load_iss, strat)
 GC.gc()
 
 runBenchmark("beam", (2.0)^5 * 5e-5, 5e-5, load_beam, strat)
 GC.gc()
 
-runBenchmark("motor", (2.0)^3 * 1e-3, 1e-3, load_motor, strat)
+runBenchmark("motor", (2.0)^4 * 1e-3, 1e-3, load_motor, strat)
 GC.gc()
 
 runBenchmark("pde", (2.0)^10 * 3e-4, 3e-4, load_pde, strat)
