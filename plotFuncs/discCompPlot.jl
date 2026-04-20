@@ -14,7 +14,7 @@ include("../models/FOM/fom_load.jl")
 include("../models/MNA1/mna1_load.jl")
 include("../models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
-include("../ReACT.jl")
+include("../ReACTv2.jl")
 include("plotHelper.jl")
 
 
@@ -23,23 +23,23 @@ include("plotHelper.jl")
 #const STRATEGY = 2
 const ∞ = Inf
 
-Digits = 3
-dm = 10.0^-Digits
-initialTimeStep = dm * 2^10
+Digits = 1e-3
+initialTimeStep = (2.0)^10 * 1e-3
 #initialTimeStep = 0.25
 palette = Plots.palette(:fes10) #Plots.palette(:cyclic_mrybm_35_75_c68_n256_s25, 2)
 c1 = palette[9]
 c2 = palette[6]
 LazySets.Comparison.set_tolerance(Float64)
 LazySets.Comparison.set_ztol(Float64, 1e-10)
-A, B, U, P₁, T, constraint, dimToPlot = load_heat_input()
+load_func = load_heat_input
+A, B, ballβ, P₁, T, constraint, dimToPlot = load_func()
 name = "heatDiscComp"
 
 #T = [0, 5]
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=true, #ϵ=dm / 4,
     legendfont=font(12, "Times"),
     #legendcolumn=-1,
-    #legend_position=:outertop,
+    legend_position=:bottomright,
     tickfont=font(8, "Times"),
     xguidefont=font(12, "Times"),
     yguidefont=font(12, "Times"),
@@ -52,7 +52,7 @@ p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=true, #ϵ=dm
     #xlabel=L"x_{1}", ylabel=L"x_{5}")
     xlabel=L"Time", ylabel=L"x_{%$dimToPlot}")
 
-STRATEGY = 1
+STRATEGY = 2
 
 constraint = isa(constraint, Array) ? constraint : [constraint]
 constraintValAdjusted = constraint[1].b * 1.2
@@ -76,33 +76,33 @@ minVal = constraintValAdjusted
 #         label=i == 1 ? L"\delta^{+} / \delta^- = %$initialTimeStep / %$dm" : "")
 # end
 
-initialTimeStep = initialTimeStep / 2^5
-boxes1, timesteps1, attemptsRecorder1 = PlotReACTIndividualDisc(A, B, initialTimeStep, T, P₁, U, constraint, dm, STRATEGY)
-shapes1, maxVal1, minVal1 = plotProjectedFlowpipe(boxes1, timesteps1, 0, dimToPlot; approx=true)
+
+boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
+
+shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 maxVal = max(maxVal1, maxVal)
 minVal = min(minVal1, minVal)
 println(minVal, " ", maxVal)
 
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], vars=(1, 0), c=c2, la=0.0, alpha=1.0, lw=0.0,
-        label=i == 1 ? L"Alg.\: 1" : "")
+    plot!(p, shapes1[i], vars=(1, 0), c=c2, la=0.0, alpha=0.7, lw=0.0,
+        label=i == 1 ? L"Alg.\: 2: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
 println("Max timestep: $(maximum(timesteps1))")
 println("Min timestep: $(minimum(timesteps1))")
-
-initialTimeStep = dm * 2^10
-boxes2, timesteps2, attemptsRecorder2 = PlotReACT(A, B, initialTimeStep, T, P₁, U, constraint, dm, STRATEGY)
-shapes2, maxVal2, minVal2 = plotProjectedFlowpipe(boxes2, timesteps2, 0, dimToPlot; approx=true)
+initialTimeStep = (2.0)^1 * 1e-3
+boxes2, timesteps2 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, 1e-3, [constraint[1].a, -constraint[1].a], STRATEGY; naive=true)
+shapes2, maxVal2, minVal2 = plotSupportFlowpipe(boxes2, timesteps2, 1, 2)
 maxVal = max(maxVal2, maxVal)
 minVal = min(minVal2, minVal)
 println(minVal, " ", maxVal)
-
+println("$(length(timesteps1)) $(length(timesteps2))")
 
 
 for i in eachindex(shapes2)
-    plot!(p, shapes2[i], vars=(1, 0), c=c1, la=0.1, alpha=1.0, lw=0.05,
-        label=i == 1 ? L"Alg.\: 2" : "")
+    plot!(p, shapes2[i], vars=(1, 0), c=c1, la=0.0, alpha=0.7, lw=0.01,
+        label=i == 1 ? L"Alg.\: 1: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
 
@@ -165,7 +165,7 @@ yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0"
 # x0 = P₁.center
 # println(x0)
 
-plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab=L"\mathcal{X}_\bot", c=:black, fillstyle=:/)
+plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe region", c=:black, fillstyle=:/)
 xlims!(0, maximum(T))
 
 savefig(p, "plots/" * name * ".pdf")

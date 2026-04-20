@@ -36,7 +36,7 @@ STRATEGY = 1
 tVal = maximum(T)
 n = size(A, 1)
 
-boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [sparsevec([dimToPlot], [1.0], n), sparsevec([dimToPlot], [-1.0], n)], STRATEGY)
+boxes1, timesteps1 = PlotReACTWithSupport(A, B, initialTimeStep, T, P₁, ballβ, constraint, Digits, [constraint[1].a, -constraint[1].a], STRATEGY)
 
 shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 # LGG
@@ -79,12 +79,12 @@ ylims!((minVal, maxVal))
 yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0", string(constraint[1].b)])
 
 
-plot!(p, flowpipe(solution_proj)[end], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0, lab=L"BFFPSV")
-plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0)
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=1.0, lw=0.01,
+    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=0.7, lw=0.01,
         label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
+plot!(p, flowpipe(solution_proj)[end], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0, lab=L"BFFPSV")
+plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0)
 
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
 xlims!((0, tVal))

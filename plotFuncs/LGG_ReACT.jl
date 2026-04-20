@@ -82,11 +82,11 @@ ylims!((minVal, maxVal))
 yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0", string(constraint[1].b)])
 
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=1.0, lw=0.01,
+    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=0.7, lw=0.05,
         label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
-plot!(p, flowpipe(solution_proj)[1], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0, lab=L"LGG")
+plot!(p, flowpipe(solution_proj)[1], vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.05, lab=L"LGG")
 plot!(p, solution_proj, vars=(0, dimToPlot), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.0)
 
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)

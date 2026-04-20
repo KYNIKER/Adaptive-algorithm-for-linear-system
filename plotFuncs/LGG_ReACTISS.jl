@@ -16,7 +16,7 @@ include("../models/MNA5/mna5_load.jl")
 #include("CegarFunctions.jl")
 #include("../CegarInhomogenous.jl")
 include("plotHelper.jl")
-include("../ReACT.jl")
+include("../ReACTv2.jl")
 
 name = "LGGvsReACTISSSupport"
 load_func = load_iss
@@ -30,7 +30,7 @@ LazySets.Comparison.set_ztol(Float64, 1e-10)
 alp = 0.7
 # ReACT
 Digits = 6e-4 #2e-3 #
-initialTimeStep = (2.0)^6 * Digits #(2.0)^10 * Digits #
+initialTimeStep = (2.0)^5 * Digits #(2.0)^10 * Digits #
 STRATEGY = 2
 
 
@@ -93,11 +93,15 @@ end
 #plot!(p, sol, vars=(0, 1), color=c2, c=c2, la=0.0, alpha=0.7, lw=0.0)
 #println(flowpipe(sol)[end])
 
+for i in eachindex(shapes1)
+    plot!(p, shapes1[i], color=c1, c=c1, la=0.0, alpha=0.7, lw=0.05,
+        label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
+end
 for (i, rp) in pairs(flowpipe(sol))
     el1 = ρ(constraint[1].a, rp)
     el2 = -ρ(constraint[2].a, rp)
 
-    plot!(p, Shape([Digits * (i - 1), Digits * (i), Digits * (i), Digits * (i - 1)], [el1, el1, el2, el2]), color=c2, c=c2, la=0.0, alpha=0.5, lw=0.05,
+    plot!(p, Shape([Digits * (i - 1), Digits * (i), Digits * (i), Digits * (i - 1)], [el1, el1, el2, el2]), color=c2, c=c2, la=0.0, alpha=1.0, lw=0.05,
         label=i == 1 ? L"LGG" : "")
 end
 println("plotted lgg")
@@ -109,10 +113,6 @@ for (i, rp) in pairs(boxes1)
     plot!(p, Shape([time, time + t, time + t, time], [el1, el1, el2, el2]), color=c1, c=c1, la=0.0, alpha=0.7, lw=0.05, label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
     global time += t
 end=#
-for i in eachindex(shapes1)
-    plot!(p, shapes1[i], color=c1, c=c1, la=0.0, alpha=0.5, lw=0.05,
-        label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
-end
 println("plotted ours")
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
 plot!(LazySets.HalfSpace([0.0, 1.0], -constraint[1].b), c=:black, fillstyle=:/)
