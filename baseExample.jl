@@ -25,8 +25,8 @@ constraint = isa(constraint, Array) ? constraint : [constraint]
 
 ###
 
-res = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY)
-println("Successful simulation?: ", res)
+amountOfSteps = ReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, STRATEGY)
+println("Successful simulation?: $(amountOfSteps > 0)")
 
 if plotOutput
     boxes, timesteps = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, δ⁻, [constraint[1].a, -constraint[1].a], STRATEGY)
