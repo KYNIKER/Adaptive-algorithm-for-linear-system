@@ -1,4 +1,4 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, Plots.PlotMeasures, LaTeXStrings
+using Plots, LazySets, LinearAlgebra, Plots.PlotMeasures, LaTeXStrings
 gr()
 
 include("../models/heat/heat_load.jl")
@@ -53,7 +53,7 @@ minVal = min(minVal1, minVal)
 println(minVal, " ", maxVal)
 
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], vars=(1, 0), c=c2, la=0.0, alpha=0.7, lw=0.0,
+    plot!(p, shapes1[i], vars=(1, 0), c=c2, la=0.0, alpha=0.7, lw=0.05,
         label=i == 1 ? L"Alg.\: 2: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
@@ -69,7 +69,7 @@ println("$(length(timesteps1)) $(length(timesteps2))")
 
 
 for i in eachindex(shapes2)
-    plot!(p, shapes2[i], vars=(1, 0), c=c1, la=0.0, alpha=0.7, lw=0.01,
+    plot!(p, shapes2[i], vars=(1, 0), c=c1, la=0.0, alpha=1.0, lw=0.05,
         label=i == 1 ? L"Alg.\: 1: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
@@ -84,4 +84,5 @@ xlims!(0, maximum(T))
 lens!(p, [9.25, 9.65], [0.096, 0.102], inset=(1, bbox(0.07, 0.7, 0.29, 0.25)), lc=:black, xtick=[], ytick=[], tickfont=font(20, "Times"), subplot=2)
 
 savefig(p, "plots/" * name * ".pdf")
+savefig(p, "plots/" * name * ".png")
 plot(p)

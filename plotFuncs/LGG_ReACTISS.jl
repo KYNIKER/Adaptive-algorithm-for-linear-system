@@ -1,5 +1,5 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
-
+# Based on the paper JuliaReach: a Toolbox for Set-Based Reachability
+using Plots, LazySets, LinearAlgebra, BenchmarkTools, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures, Polyhedra, CDDLib
 
 include("../models/heat/heat_load.jl")
 include("../models/motor/motor_load.jl")
@@ -19,7 +19,7 @@ c1 = palette[9]
 c2 = palette[6]
 alp = 0.7
 # ReACT
-Digits = 6e-4 
+Digits = 6e-4
 initialTimeStep = (2.0)^5 * Digits
 STRATEGY = 2
 
@@ -59,7 +59,7 @@ p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
 
 constraintValAdjusted = constraint[1].b * 1.1
 maxVal = constraintValAdjusted
-minVal = -constraintValAdjusted 
+minVal = -constraintValAdjusted
 
 ylims!((minVal, maxVal))
 yticks!([-constraint[1].b, 0, constraint[1].b], [string(-constraint[1].b), "0.0", string(constraint[1].b)])
@@ -82,4 +82,5 @@ plot!(LazySets.HalfSpace([0.0, 1.0], -constraint[1].b), c=:black, fillstyle=:/)
 xlims!((0, tVal))
 println(minVal, " ", maxVal)
 savefig(p, "plots/" * name * "Plot.pdf")
-plot(p)
+savefig(p, "plots/" * name * "Plot.png")
+display(p)

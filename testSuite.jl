@@ -1,4 +1,4 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, CSV, DataFrames, Expokit, ReachabilityAnalysis
+using LazySets, LinearAlgebra, BenchmarkTools, CSV, DataFrames, Expokit, ReachabilityAnalysis
 include("models/heat/heat_load.jl")
 include("models/motor/motor_load.jl")
 include("models/building/building_load.jl")
@@ -15,7 +15,7 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     LazySets.load_expokit()
     println("Running benchmark for: ", name)
     #BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
-    BenchmarkTools.DEFAULT_PARAMETERS.samples = 2
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
 
     # Actual run
     GC.gc()# Force garbage collection
@@ -38,7 +38,7 @@ function runBenchmark(name, initialTimeStep, δ⁻, load_func, STRATEGY)
     # Write to csv file
     df = DataFrame(strategy=STRATEGY, initialTimeStep=initialTimeStep, δ⁻=δ⁻, avgTime=mean(timeList), medianTime=median(timeList), success=isSuccess, memory=y.memory, allocs=y.allocs, steps=tsteps)
 
-    filename = "results/ReportReACTv5_" * name * "Results" * ".csv"
+    filename = "results/ReACT_" * name * "Results" * ".csv"
     if isfile(filename)# Check if file exists
         open(filename, "a") do File
             CSV.write(File, df, delim=";", append=true)
@@ -59,7 +59,7 @@ GC.gc()
 runBenchmark("beam", (2.0)^5 * 5e-5, 5e-5, load_beam, strategy)
 GC.gc()
 
-runBenchmark("motor", (2.0)^4 * 1e-3, 1e-3, load_motor, strategy)
+runBenchmark("motor", (2.0)^3 * 1e-3, 1e-3, load_motor, strategy)
 GC.gc()
 
 runBenchmark("pde", (2.0)^10 * 3e-4, 3e-4, load_pde, strategy)

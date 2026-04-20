@@ -1,4 +1,4 @@
-using Plots, LazySets, LinearAlgebra, BenchmarkTools, Profile, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
+using Plots, LazySets, LinearAlgebra, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
 gr()
 
 include("../models/heat/heat_load.jl")
@@ -63,7 +63,7 @@ ylims!((minVal, maxVal))
 yticks!([minVal, 0, constraint[1].b], [string(round(minVal; sigdigits=2)), "0.0", string(constraint[1].b)])
 
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], color=c1, c=c1, la=0.1, alpha=0.7, lw=0.05,
+    plot!(p, shapes1[i], color=c1, c=c1, la=0.0, alpha=0.7, lw=0.05,
         label=i == 1 ? L"Alg.\: 3: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
@@ -76,4 +76,5 @@ xlims!((0, tVal))
 lens!(p, [0.0, 0.6], [0.004, 0.0065], inset=(1, bbox(0.1, 0.7, 0.23, 0.23)), lc=:black, xtick=[], ytick=[], tickfont=font(20, "Times"), subplot=2)
 
 savefig(p, "plots/" * name * "Plot.pdf")
-plot(p)
+savefig(p, "plots/" * name * "Plot.png")
+display(p)
