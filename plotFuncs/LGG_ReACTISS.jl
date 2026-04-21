@@ -40,18 +40,14 @@ println("Ran models")
 
 p = plot(dpi=1200, thickness_scaling=1, guidefontsize=25, minorgrid=false,
     legendfont=font(12, "Times"),
-    #legendcolumn=-1,
-    #legend_position=:outertop,
     tickfont=font(8, "Times"),
     xguidefont=font(12, "Times"),
     yguidefont=font(12, "Times"),
     xtick=([0, tVal], [L"0", L"T"]),
-    #ytick=([], []),
     bottom_margin=2mm,
     left_margin=5mm,
     right_margin=5mm,
     top_margin=2mm,
-    #ylims=(minVal1, maxVal1), 
     xlims=(0, tVal), xlabel=L"Time", ylabel=L"y")
 
 
