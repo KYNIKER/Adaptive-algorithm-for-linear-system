@@ -32,7 +32,7 @@ shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 tVal = maximum(T)
 n = size(A, 1)
 
-println(maxVal1, minVal1)
+# println(maxVal1, minVal1)
 
 # LGG
 
