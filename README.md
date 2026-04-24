@@ -15,7 +15,7 @@ To start use the [Base Example](baseExample.jl) which produces a plot using ReAC
 To run the SLICOT benchmarks go to [Our Test Suite](testSuite.jl).
 Additionally you can also run benchmarks for [LGG](LGG09Test.jl) and [BFFPSV](BFFPSV18Test.jl).
 
-Importantly we refer to our approach (Algorithm 3) as ReACT found [Here.](ReACT)
+Importantly we refer to our approach (Algorithm 3) as ReACT found [Here.](ReACT.jl)
 
 ## Authors
 This repository has been made by:
