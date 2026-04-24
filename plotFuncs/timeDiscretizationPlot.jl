@@ -1,3 +1,6 @@
+# deactivate plot GUI, which is not available in Docker
+ENV["GKSwstype"] = "100"
+
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, Plots.PlotMeasures, LaTeXStrings
 
 include("../models/heat/heat_load.jl")

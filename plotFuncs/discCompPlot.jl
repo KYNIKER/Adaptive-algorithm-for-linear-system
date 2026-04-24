@@ -1,3 +1,6 @@
+# deactivate plot GUI, which is not available in Docker
+ENV["GKSwstype"] = "100"
+
 using Plots, LazySets, LinearAlgebra, Plots.PlotMeasures, LaTeXStrings
 gr()
 
