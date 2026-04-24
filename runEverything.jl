@@ -8,6 +8,8 @@ const RUN_PLOTS = true
 
 println("Running Benchmarks")
 include("testSuite.jl")
+include("BFFPSV18Test.jl")
+include("LGG09Test.jl")
 println("Finished Benchmarks")
 
 if RUN_PLOTS
