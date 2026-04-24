@@ -52,7 +52,7 @@ minVal = min(minVal1, minVal)
 println(minVal, " ", maxVal)
 
 for i in eachindex(shapes1)
-    plot!(p, shapes1[i], vars=(1, 0), c=c2, la=0.0, alpha=0.7, lw=0.05,
+    plot!(p, shapes1[i], vars=(1, 0), c=c1, la=0.0, alpha=0.7, lw=0.05,
         label=i == 1 ? L"Alg.\: 2: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
@@ -68,7 +68,7 @@ println("$(length(timesteps1)) $(length(timesteps2))")
 
 
 for i in eachindex(shapes2)
-    plot!(p, shapes2[i], vars=(1, 0), c=c1, la=0.0, alpha=1.0, lw=0.05,
+    plot!(p, shapes2[i], vars=(1, 0), c=c2, la=0.0, alpha=1.0, lw=0.05,
         label=i == 1 ? L"Alg.\: 1: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
