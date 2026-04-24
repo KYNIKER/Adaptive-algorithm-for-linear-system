@@ -17,7 +17,7 @@ $ julia runEverything.jl
 
 To use docker install docker [Here](https://docs.docker.com/install/). Once you have installed docker, run the script: 
 ```shell 
-$ ./submit.sh
+$ ./run.sh
 ```
 
 ## General Usage
