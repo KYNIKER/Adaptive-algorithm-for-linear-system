@@ -56,7 +56,8 @@ function doLGG09JuliaTest(load_func, name)
         return
     end
     if _name == "mna1"
-        sys = @system(x' = Ax + B, x ∈ Universe(n))
+        b = @view B[diagind(B)]
+        sys = @system(x' = Ax + b, x ∈ Universe(n))
     else
         sys = @system(x' = Ax + Bu, x ∈ Universe(n), u ∈ ballβ)
     end
