@@ -4,10 +4,23 @@
 ## Overview
 ReACT is a reachability algorithm for linear time invarient systems. 
 
-
 It introduces variable time steps and a new discretization technique found [Here.](ReACTDiscretize.jl)
 
-## Usage
+# Fast Usage
+To install and run ReACT you can either do it using the Julia script or using a Docker scipt. 
+
+To use the Julia script install a julia interpreter found [Here](https://julialang.org/downloads/) and run everything with:
+
+```shell 
+$ julia runEverything.jl
+```
+
+To use docker install docker [Here](https://docs.docker.com/install/). Once you have installed docker, run the script: 
+```shell 
+$ ./run.sh
+```
+
+## General Usage
 To use ReACT install a julia interpreter found [Here](https://julialang.org/downloads/) and install the relevant packages by running [The Setup File](setupLibraries.jl)
 
 To start use the [Base Example](baseExample.jl) which produces a plot using ReACT. Here you can also adjust time step sizes and which model to plot.

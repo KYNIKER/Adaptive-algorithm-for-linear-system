@@ -47,7 +47,7 @@ end
 function doBFFPSV18JuliaTest(load_func, name)
     println("Running benchmark for: ", name, "...")
     BenchmarkTools.DEFAULT_PARAMETERS.seconds = 3600
-    BenchmarkTools.DEFAULT_PARAMETERS.samples = 10
+    BenchmarkTools.DEFAULT_PARAMETERS.samples = 1  # reduced from 10 for faster evaluation
 
     GC.gc() # Force garbage collection
     A, B, ballβ, P₁, time, constraint, _ = load_func()

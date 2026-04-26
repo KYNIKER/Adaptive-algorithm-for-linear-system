@@ -1,3 +1,6 @@
+# deactivate plot GUI, which is not available in Docker
+ENV["GKSwstype"] = "100"
+
 using Plots, LazySets, LinearAlgebra, Plots.PlotMeasures, LaTeXStrings
 gr()
 
@@ -49,22 +52,22 @@ boxes1, timesteps1 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constrain
 shapes1, maxVal1, minVal1 = plotSupportFlowpipe(boxes1, timesteps1, 1, 2)
 maxVal = max(maxVal1, maxVal)
 minVal = min(minVal1, minVal)
-println(minVal, " ", maxVal)
+# println(minVal, " ", maxVal)
 
 for i in eachindex(shapes1)
     plot!(p, shapes1[i], vars=(1, 0), c=c1, la=0.0, alpha=0.7, lw=0.05,
         label=i == 1 ? L"Alg.\: 2: \delta^{+} / \delta^- = %$initialTimeStep / %$Digits" : "")
 end
 
-println("Max timestep: $(maximum(timesteps1))")
-println("Min timestep: $(minimum(timesteps1))")
+# println("Max timestep: $(maximum(timesteps1))")
+# println("Min timestep: $(minimum(timesteps1))")
 initialTimeStep = (2.0)^1 * 1e-3
 boxes2, timesteps2 = PlotReACT(A, B, initialTimeStep, T, P₁, ballβ, constraint, 1e-3, [constraint[1].a, -constraint[1].a], STRATEGY; naive=true)
 shapes2, maxVal2, minVal2 = plotSupportFlowpipe(boxes2, timesteps2, 1, 2)
 maxVal = max(maxVal2, maxVal)
 minVal = min(minVal2, minVal)
-println(minVal, " ", maxVal)
-println("$(length(timesteps1)) $(length(timesteps2))")
+# println(minVal, " ", maxVal)
+# println("$(length(timesteps1)) $(length(timesteps2))")
 
 
 for i in eachindex(shapes2)

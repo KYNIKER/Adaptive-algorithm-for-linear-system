@@ -1,3 +1,6 @@
+# deactivate plot GUI, which is not available in Docker
+ENV["GKSwstype"] = "100"
+
 using Plots, LazySets, LinearAlgebra, BenchmarkTools, ReachabilityAnalysis, LaTeXStrings, Plots.PlotMeasures
 
 include("../models/heat/heat_load.jl")
@@ -75,7 +78,7 @@ end
 plot!(LazySets.HalfSpace([0.0, -1.0], -constraint[1].b), lab="Unsafe Region", c=:black, fillstyle=:/)
 plot!(LazySets.HalfSpace([0.0, 1.0], -constraint[1].b), c=:black, fillstyle=:/)
 xlims!((0, tVal))
-println(minVal, " ", maxVal)
+# println(minVal, " ", maxVal)
 savefig(p, "plots/" * name * "Plot.pdf")
 savefig(p, "plots/" * name * "Plot.png")
 display(p)
